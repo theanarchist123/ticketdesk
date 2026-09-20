@@ -11,6 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatTimeLeft } from "@/lib/format";
 
 const navItems = [
@@ -24,7 +26,6 @@ export function Layout({ children }: { children: ReactNode }) {
   const [commandOpen, setCommandOpen] = useState(false);
   
   const { data: stats } = useStats();
-  // Request overdue tickets (sla param will be supported in Phase 2)
   const { data: overdueTickets } = useTickets({ limit: 5, sla: "overdue" } as any);
   const overdueCount = stats?.overdue || 0;
   const now = new Date();
@@ -70,7 +71,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Users className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium leading-none">Support team</span>
+               <span className="text-sm font-medium leading-none">Support team</span>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { Link, useSearchParams } from "react-router";
 
 import { AnimatePresence } from "motion/react";
 import { Layout } from "@/components/layout";
-import { useTickets } from "@/hooks/useTickets";
+import { useTickets, useStats } from "@/hooks/useTickets";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { QueueToolbar } from "@/components/ticket/queue-toolbar";
