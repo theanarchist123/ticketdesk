@@ -91,6 +91,9 @@ class StatsOut(BaseModel):
     in_progress: int
     closed: int
     overdue: int
+    at_risk: int = 0
+    sla_met_pct: float = 100.0
+    by_priority: dict[str, int] = {}
 
 
 class ErrorResponse(BaseModel):

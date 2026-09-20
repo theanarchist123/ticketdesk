@@ -3,7 +3,7 @@ export type SLAState = "on_track" | "at_risk" | "overdue" | "resolved";
 export interface Note {
   id: number;
   note_text: string;
-  kind: "note" | "status_change";
+  kind: "note" | "status_change" | "priority_change";
   created_at: string;
 }
 

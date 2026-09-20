@@ -222,6 +222,29 @@ class TestListTickets:
         assert "sla_state" in resp.json()[0]
 
 
+    def test_sla_filter(self):
+        # We need an overdue ticket and an on-track ticket.
+        from app.database import SessionLocal
+        from app.models import Ticket
+        now = datetime.now(timezone.utc)
+        
+        db = TestSession()
+        t1 = Ticket(ticket_id="TKT-001", customer_name="O", customer_email="o@o.c", subject="S", description="D", status="Open", priority="Urgent", due_at=now - timedelta(hours=1), created_at=now - timedelta(hours=5), updated_at=now)
+        t2 = Ticket(ticket_id="TKT-002", customer_name="O", customer_email="a@o.c", subject="S", description="D", status="Open", priority="Urgent", due_at=now + timedelta(hours=20), created_at=now, updated_at=now)
+        db.add_all([t1, t2])
+        db.commit()
+        db.close()
+        
+        resp = client.get("/api/tickets?sla=overdue")
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["ticket_id"] == "TKT-001"
+
+    def test_customer_email_filter(self):
+        self._seed(3)
+        resp = client.get("/api/tickets?customer_email=user1@test.com")
+        assert len(resp.json()) == 1
+        assert resp.json()[0]["ticket_id"] == "TKT-002"
+
 class TestGetTicket:
     def test_get_existing(self):
         client.post("/api/tickets", json={
@@ -257,6 +280,7 @@ class TestUpdateTicket:
             "customer_email": "update@test.com",
             "subject": "Update test ticket",
             "description": "A description for the update test that is long enough.",
+            "priority": "Medium",
         })
 
     def test_add_note(self):
@@ -279,6 +303,16 @@ class TestUpdateTicket:
         assert len(status_notes) == 1
         assert "Open" in status_notes[0]["note_text"]
         assert "In Progress" in status_notes[0]["note_text"]
+
+    def test_priority_change_creates_system_note(self):
+        self._create_one()
+        client.put("/api/tickets/TKT-001", json={"priority": "Urgent"})
+
+        detail = client.get("/api/tickets/TKT-001").json()
+        priority_notes = [n for n in detail["notes"] if n["kind"] == "priority_change"]
+        assert len(priority_notes) == 1
+        assert "Medium" in priority_notes[0]["note_text"]
+        assert "Urgent" in priority_notes[0]["note_text"]
 
     def test_close_sets_resolved_at(self):
         self._create_one()
@@ -323,7 +357,8 @@ class TestStats:
         resp = client.get("/api/stats")
         assert resp.status_code == 200
         data = resp.json()
-        assert data == {"all": 0, "open": 0, "in_progress": 0, "closed": 0, "overdue": 0}
+        assert data["all"] == 0
+        assert data["sla_met_pct"] == 100.0
 
     def test_stats_with_tickets(self):
         for i in range(3):
@@ -332,6 +367,7 @@ class TestStats:
                 "customer_email": f"stats{i}@test.com",
                 "subject": f"Stats issue {i}",
                 "description": f"Description for stats test number {i} with enough length.",
+                "priority": "Low",
             })
         client.put("/api/tickets/TKT-002", json={"status": "In Progress"})
         client.put("/api/tickets/TKT-003", json={"status": "Closed"})
@@ -342,6 +378,8 @@ class TestStats:
         assert data["open"] == 1
         assert data["in_progress"] == 1
         assert data["closed"] == 1
+        assert data["by_priority"]["Low"] == 2
+        assert data["sla_met_pct"] == 100.0
 
 
 class TestHealth:

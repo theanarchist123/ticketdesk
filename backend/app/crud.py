@@ -10,7 +10,7 @@ Key decisions:
 
 from datetime import datetime, timezone
 
-from sqlalchemy import func, or_, case, literal
+from sqlalchemy import func, or_, and_, case, literal
 from sqlalchemy.orm import Session
 
 from app.models import Ticket, Note
@@ -63,6 +63,8 @@ def list_tickets(
     status: str | None = None,
     search: str | None = None,
     priority: str | None = None,
+    sla: str | None = None,
+    customer_email: str | None = None,
     sort: str = "priority_sla",
     limit: int = 50,
     offset: int = 0,
@@ -76,6 +78,31 @@ def list_tickets(
 
     if priority:
         query = query.filter(Ticket.priority == priority)
+
+    if customer_email:
+        query = query.filter(Ticket.customer_email == customer_email)
+
+    if sla:
+        now = _utcnow()
+        from app.sla import SLA_HOURS
+        from datetime import timedelta
+        
+        if sla == "overdue":
+            query = query.filter(Ticket.status.in_(["Open", "In Progress"]), Ticket.due_at < now)
+        elif sla == "at_risk":
+            at_risk_conds = []
+            for pri, hrs in SLA_HOURS.items():
+                at_risk_conds.append(
+                    and_(Ticket.priority == pri, Ticket.due_at >= now, Ticket.due_at < now + timedelta(hours=hrs * 0.25))
+                )
+            query = query.filter(Ticket.status.in_(["Open", "In Progress"]), or_(*at_risk_conds))
+        elif sla == "on_track":
+            on_track_conds = []
+            for pri, hrs in SLA_HOURS.items():
+                on_track_conds.append(
+                    and_(Ticket.priority == pri, Ticket.due_at >= now + timedelta(hours=hrs * 0.25))
+                )
+            query = query.filter(Ticket.status.in_(["Open", "In Progress"]), or_(*on_track_conds))
 
     if search:
         pattern = f"%{_escape_like(search)}%"
@@ -204,8 +231,16 @@ def update_ticket(
 
     # ── Priority change ───────────────────────────────────────────────────
     if priority and priority != ticket.priority:
+        old_priority = ticket.priority
         ticket.priority = priority
         ticket.due_at = compute_due_at(ticket.created_at, priority)
+        
+        db.add(Note(
+            ticket_id=ticket.id,
+            note_text=f"Priority changed from {old_priority} to {priority}",
+            kind="priority_change",
+            created_at=now,
+        ))
 
     # ── User note ─────────────────────────────────────────────────────────
     if notes:
@@ -241,10 +276,44 @@ def get_stats(db: Session) -> dict:
         .scalar() or 0
     )
 
+    from app.sla import SLA_HOURS
+    from datetime import timedelta
+    
+    at_risk_conds = []
+    for pri, hrs in SLA_HOURS.items():
+        at_risk_conds.append(
+            and_(Ticket.priority == pri, Ticket.due_at >= now, Ticket.due_at < now + timedelta(hours=hrs * 0.25))
+        )
+    at_risk = (
+        db.query(func.count(Ticket.id))
+        .filter(Ticket.status.in_(["Open", "In Progress"]), or_(*at_risk_conds))
+        .scalar() or 0
+    )
+    
+    # SLA Met % for Closed tickets
+    sla_met_count = (
+        db.query(func.count(Ticket.id))
+        .filter(Ticket.status == "Closed", Ticket.resolved_at <= Ticket.due_at)
+        .scalar() or 0
+    )
+    sla_met_pct = (sla_met_count / closed * 100.0) if closed > 0 else 100.0
+    
+    # by_priority for open and in progress
+    priority_counts = (
+        db.query(Ticket.priority, func.count(Ticket.id))
+        .filter(Ticket.status.in_(["Open", "In Progress"]))
+        .group_by(Ticket.priority)
+        .all()
+    )
+    by_priority = {pri: count for pri, count in priority_counts}
+
     return {
         "all": total,
         "open": open_count,
         "in_progress": in_progress,
         "closed": closed,
         "overdue": overdue,
+        "at_risk": at_risk,
+        "sla_met_pct": round(sla_met_pct, 1),
+        "by_priority": by_priority,
     }

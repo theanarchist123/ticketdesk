@@ -39,6 +39,8 @@ def api_list_tickets(
     status: str | None = Query(None),
     search: str | None = Query(None),
     priority: str | None = Query(None),
+    sla: str | None = Query(None, pattern="^(overdue|at_risk|on_track)$"),
+    customer_email: str | None = Query(None),
     sort: str = Query("priority_sla"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -46,6 +48,7 @@ def api_list_tickets(
 ):
     items, total = list_tickets(
         db, status=status, search=search, priority=priority,
+        sla=sla, customer_email=customer_email,
         sort=sort, limit=limit, offset=offset,
     )
     response.headers["X-Total-Count"] = str(total)
