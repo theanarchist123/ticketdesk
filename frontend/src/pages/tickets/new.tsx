@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { Layout } from "@/components/layout";
-import { useCreateTicket, useStats } from "@/hooks/useTickets";
+import { useCreateTicket } from "@/hooks/useTickets";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,11 +17,12 @@ import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityMark } from "@/components/ui/priority-mark";
 import { SlaRing } from "@/components/ui/sla-ring";
+import { SLA_HOURS } from "@/lib/sla";
 
 const schema = z.object({
   customer_name: z.string().min(2, "Name must be at least 2 characters."),
   customer_email: z.string().email("Please enter a valid email address."),
-  subject: z.string().min(5, "Subject must be at least 5 characters."),
+  subject: z.string().min(5, "Subject must be at least 5 characters.").max(100, "Subject is too long."),
   description: z.string().min(10, "Please provide more details (at least 10 chars)."),
   priority: z.enum(["Low", "Medium", "High", "Urgent"]),
 });
@@ -33,12 +34,7 @@ const PRIORITIES = ["Low", "Medium", "High", "Urgent"] as const;
 export default function NewTicketPage() {
   const navigate = useNavigate();
   const createTicket = useCreateTicket();
-  const { data: stats, isLoading: statsLoading } = useStats();
   
-  const estimatedNextId = statsLoading 
-    ? "TKT-..." 
-    : `TKT-${String((stats?.all || 0) + 1).padStart(3, '0')}`;
-
   const {
     register,
     handleSubmit,
@@ -53,6 +49,7 @@ export default function NewTicketPage() {
   });
 
   const formValues = watch();
+  const subjectLength = formValues.subject?.length || 0;
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -83,21 +80,14 @@ export default function NewTicketPage() {
           <form onSubmit={handleSubmit(onSubmit)}>
             <Card className="bg-[var(--td-surface)] border-[var(--td-border)]">
               <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle>Ticket details</CardTitle>
-                    <CardDescription className="text-[var(--td-muted)]">Fill out the information below to log the issue.</CardDescription>
-                  </div>
-                  <div className="bg-[var(--td-raised)] px-3 py-1 rounded-md border border-[var(--td-border)] font-mono text-sm text-[var(--td-muted)]">
-                    {estimatedNextId}
-                  </div>
-                </div>
+                <CardTitle>Ticket details</CardTitle>
+                <CardDescription className="text-[var(--td-muted)]">Fill out the information below to log the issue.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="customer_name">Customer name</Label>
+                    <Label htmlFor="customer_name">Customer name <span className="text-rose-500">*</span></Label>
                     <Input 
                       id="customer_name" 
                       placeholder="Jane Doe" 
@@ -106,12 +96,12 @@ export default function NewTicketPage() {
                       aria-invalid={!!errors.customer_name}
                     />
                     {errors.customer_name && (
-                      <p className="text-sm text-[var(--td-sla-overdue)] font-medium">{errors.customer_name.message}</p>
+                      <p className="text-sm text-rose-500 font-medium">{errors.customer_name.message}</p>
                     )}
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="customer_email">Customer email</Label>
+                    <Label htmlFor="customer_email">Customer email <span className="text-rose-500">*</span></Label>
                     <Input 
                       id="customer_email" 
                       type="email"
@@ -121,13 +111,18 @@ export default function NewTicketPage() {
                       aria-invalid={!!errors.customer_email}
                     />
                     {errors.customer_email && (
-                      <p className="text-sm text-[var(--td-sla-overdue)] font-medium">{errors.customer_email.message}</p>
+                      <p className="text-sm text-rose-500 font-medium">{errors.customer_email.message}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="subject">Subject <span className="text-rose-500">*</span></Label>
+                    <span className={`text-xs ${subjectLength > 100 ? 'text-rose-500' : 'text-[var(--td-muted)]'}`}>
+                      {subjectLength} / 100
+                    </span>
+                  </div>
                   <Input 
                     id="subject" 
                     placeholder="Brief summary of the issue..." 
@@ -136,12 +131,12 @@ export default function NewTicketPage() {
                     aria-invalid={!!errors.subject}
                   />
                   {errors.subject && (
-                    <p className="text-sm text-[var(--td-sla-overdue)] font-medium">{errors.subject.message}</p>
+                    <p className="text-sm text-rose-500 font-medium">{errors.subject.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description <span className="text-rose-500">*</span></Label>
                   <Textarea 
                     id="description" 
                     placeholder="Detailed explanation of the issue, steps to reproduce, or any relevant context..." 
@@ -150,29 +145,34 @@ export default function NewTicketPage() {
                     aria-invalid={!!errors.description}
                   />
                   {errors.description && (
-                    <p className="text-sm text-[var(--td-sla-overdue)] font-medium">{errors.description.message}</p>
+                    <p className="text-sm text-rose-500 font-medium">{errors.description.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
                   <Label>Priority</Label>
-                  <div className="flex bg-[var(--td-bg)] p-1 rounded-lg relative overflow-x-auto border border-[var(--td-border)]">
+                  <div className="flex flex-col sm:flex-row bg-[var(--td-bg)] p-1 rounded-lg relative gap-1 border border-[var(--td-border)]">
                     {PRIORITIES.map((p) => {
                       const isActive = formValues.priority === p;
+                      const slaHours = SLA_HOURS[p] || 24;
                       return (
                         <button
                           key={p}
                           type="button"
                           onClick={() => setValue("priority", p, { shouldValidate: true })}
-                          className={`relative z-10 flex-1 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-md ${
-                            isActive ? "text-[var(--td-text)]" : "text-[var(--td-muted)] hover:text-[var(--td-text)]"
+                          className={`relative z-10 flex-1 px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-md ${
+                            isActive ? "text-[var(--td-text)]" : "text-[var(--td-muted)] hover:text-[var(--td-text)] bg-[var(--td-surface)]"
                           }`}
                         >
-                          {p}
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span>{p}</span>
+                            <span className="opacity-50">·</span>
+                            <span className="opacity-70">{slaHours}h</span>
+                          </div>
                           {isActive && (
                             <motion.div
                               layoutId="priority-tab"
-                              className="absolute inset-0 bg-[var(--td-raised)] rounded-md border border-[var(--td-border)] shadow-sm -z-10"
+                              className="absolute inset-0 bg-[var(--td-raised)] rounded-md shadow-sm border border-[var(--td-border)] -z-10"
                               initial={false}
                               transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                             />
@@ -182,7 +182,7 @@ export default function NewTicketPage() {
                     })}
                   </div>
                   {errors.priority && (
-                    <p className="text-sm text-[var(--td-sla-overdue)] font-medium">{errors.priority.message}</p>
+                    <p className="text-sm text-rose-500 font-medium">{errors.priority.message}</p>
                   )}
                 </div>
 
@@ -212,7 +212,7 @@ export default function NewTicketPage() {
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0 w-8 flex justify-center">
                     <SlaRing 
-                      dueAt={new Date(Date.now() + 24 * 3600000).toISOString()} 
+                      dueAt={new Date(Date.now() + (SLA_HOURS[formValues.priority || "Medium"] || 24) * 3600000).toISOString()} 
                       createdAt={new Date().toISOString()} 
                       status="Open" 
                       priority={formValues.priority || "Medium"} 
@@ -222,14 +222,9 @@ export default function NewTicketPage() {
                   </div>
                   
                   <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-[var(--td-muted)]">
-                        {estimatedNextId}
-                      </span>
-                      <h3 className="font-medium truncate text-[var(--td-text)]">
-                        {formValues.subject || "Ticket subject will appear here"}
-                      </h3>
-                    </div>
+                    <h3 className="font-medium truncate text-[var(--td-text)]">
+                      {formValues.subject || "Ticket subject will appear here"}
+                    </h3>
                     <div className="flex items-center gap-2 text-sm text-[var(--td-muted)] truncate">
                       <Avatar 
                         name={formValues.customer_name || "New User"} 
