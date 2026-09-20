@@ -29,5 +29,5 @@ RUN cp -r /app/frontend/dist /app/backend/static
 ENV PORT=8000
 EXPOSE 8000
 
-# Start script to seed data and run server
-CMD ["sh", "-c", "python -c 'from app.seed import seed_demo_data; seed_demo_data()' && uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
+# Seeding is handled inside FastAPI's lifespan handler (after init_db creates tables).
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
