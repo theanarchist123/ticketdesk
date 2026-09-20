@@ -37,7 +37,6 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
   const state = computeFrontendSlaState(status, dueAt, createdAt, priority, now);
   
   const { color, pulse } = stateConfig[state];
-  const shouldAnimate = animate && state !== "resolved";
 
   if (size === "sm") {
     // Solid dot when animate=false (e.g. used in the preview perhaps? actually the spec says "solid circle (dot) if animate=false")

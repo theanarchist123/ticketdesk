@@ -1,9 +1,10 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { LayoutDashboard, Ticket, Bell, Search, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useStats, useTickets } from "@/hooks/useTickets";
+import { CommandPalette } from "@/components/command-palette";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,7 @@ const navItems = [
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isTicketsPage = location.pathname === "/tickets";
+  const [commandOpen, setCommandOpen] = useState(false);
   
   const { data: stats } = useStats();
   // Request overdue tickets (sla param will be supported in Phase 2)
@@ -82,7 +84,7 @@ export function Layout({ children }: { children: ReactNode }) {
             {!isTicketsPage && (
               <button
                 className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground bg-muted/50 border rounded-md hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                onClick={() => {/* Command Palette hook phase 6 */}}
+                onClick={() => setCommandOpen(true)}
               >
                 <div className="flex items-center gap-2">
                   <Search className="h-4 w-4" />
@@ -151,6 +153,8 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+
+      <CommandPalette open={commandOpen} setOpen={setCommandOpen} />
     </div>
   );
 }

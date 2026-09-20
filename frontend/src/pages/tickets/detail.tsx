@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams, Link } from "react-router";
 import { Layout } from "@/components/layout";
 import { useTicket, useUpdateTicket } from "@/hooks/useTickets";
-import { SLARing } from "@/components/ui/sla-ring";
+import { SlaRing } from "@/components/ui/sla-ring";
 import { formatTimeAgo, formatDateTime, formatTimeLeft } from "@/lib/format";
 import { computeFrontendSlaState } from "@/lib/sla";
 import { useNow } from "@/hooks/useNow";
@@ -149,96 +149,97 @@ export default function TicketDetailPage() {
             </div>
           </div>
 
-          <Card>
-            <CardHeader className="pb-4">
+          <Card className="bg-[var(--td-surface)] border-[var(--td-border)]">
+            <CardHeader className="pb-4 border-b border-[var(--td-border)]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                  <User className="w-5 h-5 text-muted-foreground" />
+                <div className="w-10 h-10 rounded-full bg-[var(--td-raised)] flex items-center justify-center">
+                  <User className="w-5 h-5 text-[var(--td-muted)]" />
                 </div>
                 <div>
                   <div className="font-medium">{ticket.customer_name}</div>
-                  <div className="text-sm text-muted-foreground">{ticket.customer_email}</div>
+                  <div className="text-sm text-[var(--td-muted)]">{ticket.customer_email}</div>
                 </div>
               </div>
             </CardHeader>
-            <Separator />
             <CardContent className="pt-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-[var(--td-text)]">
                 {ticket.description}
               </div>
             </CardContent>
           </Card>
 
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <History className="w-5 h-5" /> Activity timeline
+          {/* Composer */}
+          <Card className="shadow-sm border-[var(--td-border)] bg-[var(--td-surface)]">
+            <CardContent className="p-4">
+              <Textarea 
+                placeholder="Type a note to add to the timeline..."
+                className="h-[120px] resize-none bg-[var(--td-bg)] border-[var(--td-border)] focus-visible:ring-[var(--td-primary)] mb-3"
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    handleAddNote();
+                  }
+                }}
+              />
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-[var(--td-muted)] hidden sm:inline-block">Press <kbd className="font-mono bg-[var(--td-raised)] px-1 rounded">⌘ Enter</kbd> to submit</span>
+                <Button 
+                  className="bg-[var(--td-primary)] text-white hover:opacity-90 ml-auto"
+                  onClick={handleAddNote}
+                  disabled={!noteText.trim() || updateTicket.isPending}
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Add note
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Timeline */}
+          <div className="mt-2 mb-12">
+            <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
+              <History className="w-5 h-5 text-[var(--td-muted)]" /> Activity timeline
             </h3>
-            <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted before:to-transparent">
+            
+            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-[2px] before:bg-[var(--td-border)]">
               
               {/* Original Post Marker */}
-              <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-muted text-muted-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+              <div className="relative flex items-start gap-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full border-[4px] border-[var(--td-bg)] bg-[var(--td-raised)] text-[var(--td-muted)] z-10 shrink-0">
                   <Ticket className="w-4 h-4" />
                 </div>
-                <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-lg border bg-card shadow-sm">
+                <div className="flex-1 p-4 rounded-xl border border-[var(--td-border)] bg-[var(--td-surface)] shadow-sm">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-sm">Ticket Opened</span>
-                    <time className="text-xs text-muted-foreground">{formatDateTime(ticket.created_at)}</time>
+                    <time className="text-xs text-[var(--td-muted)]">{formatDateTime(ticket.created_at)}</time>
                   </div>
-                  <p className="text-sm text-muted-foreground">System received the ticket.</p>
+                  <p className="text-sm text-[var(--td-muted)]">System received the ticket.</p>
                 </div>
               </div>
 
               {ticket.notes.map((note) => (
-                <div key={note.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-background shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 ${
-                    note.kind === 'status_change' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+                <div key={note.id} className="relative flex items-start gap-4">
+                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-[4px] border-[var(--td-bg)] z-10 shrink-0 ${
+                    note.kind === 'status_change' ? 'bg-[var(--td-primary)] text-white' : 'bg-[var(--td-raised)] text-[var(--td-text)]'
                   }`}>
-                    {note.kind === 'status_change' ? <CheckCircle2 className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+                    {note.kind === 'status_change' ? <CheckCircle2 className="w-4 h-4" /> : <MessageSquare className="w-4 h-4 text-[var(--td-muted)]" />}
                   </div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-lg border bg-card shadow-sm">
+                  <div className="flex-1 p-4 rounded-xl border border-[var(--td-border)] bg-[var(--td-surface)] shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-sm">
                         {note.kind === 'status_change' ? 'System' : 'Support Agent'}
                       </span>
-                      <time className="text-xs text-muted-foreground">{formatDateTime(note.created_at)}</time>
+                      <time className="text-xs text-[var(--td-muted)]">{formatDateTime(note.created_at)}</time>
                     </div>
-                    <p className={`text-sm whitespace-pre-wrap ${note.kind === 'status_change' ? 'text-muted-foreground font-medium' : ''}`}>
+                    <p className={`text-sm whitespace-pre-wrap ${note.kind === 'status_change' ? 'text-[var(--td-muted)] font-medium' : 'text-[var(--td-text)]'}`}>
                       {note.note_text}
                     </p>
                   </div>
                 </div>
               ))}
-
             </div>
           </div>
-          
-          <div className="sticky bottom-4 z-10">
-            <Card className="shadow-lg border-primary/20">
-              <CardContent className="p-3 sm:p-4 flex gap-3">
-                <Textarea 
-                  placeholder="Type a note to add to the timeline..."
-                  className="min-h-[60px] resize-none"
-                  value={noteText}
-                  onChange={e => setNoteText(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      handleAddNote();
-                    }
-                  }}
-                />
-                <Button 
-                  className="shrink-0 h-auto" 
-                  onClick={handleAddNote}
-                  disabled={!noteText.trim() || updateTicket.isPending}
-                >
-                  <Send className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Add note</span>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
         </div>
 
         {/* Sidebar Column */}
@@ -251,7 +252,15 @@ export default function TicketDetailPage() {
             }`} />
             <CardContent className="p-6">
               <div className="flex flex-col items-center text-center">
-                <SLARing state={currentState} size="lg" className="mb-4" />
+                  <div className="flex justify-center mb-6">
+                    <SlaRing 
+                      dueAt={ticket.due_at} 
+                      createdAt={ticket.created_at} 
+                      status={ticket.status} 
+                      priority={ticket.priority} 
+                      size="lg" 
+                    />
+                  </div>
                 <h3 className="font-bold text-xl mb-1">
                   {currentState === 'overdue' ? 'SLA Overdue' :
                    currentState === 'at_risk' ? 'SLA At Risk' :

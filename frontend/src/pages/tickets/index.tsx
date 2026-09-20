@@ -1,29 +1,19 @@
 import { Link, useSearchParams } from "react-router";
-import { format } from "date-fns";
-import { motion, AnimatePresence } from "motion/react";
+
+import { AnimatePresence } from "motion/react";
 import { Layout } from "@/components/layout";
 import { useTickets } from "@/hooks/useTickets";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
-import { SLARing } from "@/components/ui/sla-ring";
-import { computeFrontendSlaState } from "@/lib/sla";
-import { formatTimeAgo, formatTimeLeft } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import { QueueToolbar } from "@/components/ticket/queue-toolbar";
+import { TicketRow } from "@/components/ticket/ticket-row";
+import { formatTimeAgo } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, AlertCircle, TicketIcon } from "lucide-react";
 
 export default function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const now = useNow(60000); // update every minute
+  const now = useNow(60000);
   
   const statusFilter = searchParams.get("status") || "all";
   const searchInput = searchParams.get("search") || "";
@@ -31,7 +21,7 @@ export default function TicketsPage() {
   const limit = 15;
   const offset = (page - 1) * limit;
 
-  const debouncedSearch = useDebounce(searchInput, 500);
+  const debouncedSearch = useDebounce(searchInput, 300);
 
   const { data, isLoading, isError, dataUpdatedAt } = useTickets({
     status: statusFilter !== "all" ? statusFilter : undefined,
@@ -72,135 +62,70 @@ export default function TicketsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Support queue</h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2">
+            <p className="text-[var(--td-muted)] mt-1 flex items-center gap-2">
               {total} tickets &middot; Updated {dataUpdatedAt ? formatTimeAgo(new Date(dataUpdatedAt).toISOString()) : "just now"}
             </p>
           </div>
-          <Button asChild>
+          <Button asChild className="bg-[var(--td-primary)] text-white hover:opacity-90">
             <Link to="/tickets/new">New ticket</Link>
           </Button>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card p-2 rounded-lg border shadow-sm">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search by ID, name, email..."
-                className="pl-9 w-full bg-background/50 border-none"
-                value={searchInput}
-                onChange={handleSearch}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Select value={statusFilter} onValueChange={handleStatusChange}>
-              <SelectTrigger className="min-w-[160px] border-none bg-background/50">
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
-                <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="In Progress">In progress</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <QueueToolbar
+          searchInput={searchInput}
+          onSearchChange={handleSearch}
+          statusFilter={statusFilter}
+          onStatusChange={handleStatusChange}
+        />
 
         {/* Ticket List */}
-        <div className="bg-card border rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-[var(--td-surface)] border border-[var(--td-border)] rounded-xl overflow-hidden shadow-sm min-h-[400px] relative">
           {isLoading ? (
-            <div className="p-12 text-center text-muted-foreground flex flex-col items-center gap-2">
-              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Loading tickets...
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-muted)] gap-4 bg-[var(--td-surface)]/50 backdrop-blur-sm z-10">
+              <div className="h-8 w-8 border-2 border-[var(--td-primary)] border-t-transparent rounded-full animate-spin" />
+              <p className="font-medium animate-pulse">Loading queue...</p>
             </div>
           ) : isError ? (
-            <div className="p-12 text-center text-rose-500 flex flex-col items-center gap-2">
-              <AlertCircle className="h-8 w-8" />
-              Failed to load tickets. Please try again.
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-sla-overdue)] gap-4 p-8 text-center bg-[var(--td-surface)] z-10">
+              <AlertCircle className="h-10 w-10 opacity-80" />
+              <div>
+                <h3 className="font-bold text-lg">Failed to load tickets</h3>
+                <p className="opacity-80 mt-1">There was a problem communicating with the server.</p>
+              </div>
             </div>
           ) : tickets.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              No tickets found matching your criteria.
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-muted)] gap-4 p-8 text-center bg-[var(--td-surface)] z-10">
+              <TicketIcon className="h-12 w-12 opacity-20" />
+              <div>
+                <h3 className="font-semibold text-lg text-[var(--td-text)]">No tickets found</h3>
+                <p className="mt-1 max-w-sm mx-auto">We couldn't find any tickets matching your current filters. Try adjusting your search or clearing the status filter.</p>
+              </div>
+              {(searchInput || statusFilter !== "all") && (
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  onClick={() => setSearchParams(new URLSearchParams())}
+                >
+                  Clear all filters
+                </Button>
+              )}
             </div>
-          ) : (
-            <div className="divide-y">
-              <AnimatePresence mode="popLayout">
-                {tickets.map((t, idx) => {
-                  const currentState = computeFrontendSlaState(
-                    t.status,
-                    t.due_at,
-                    t.created_at,
-                    t.priority,
-                    now
-                  );
-                  
-                  return (
-                    <motion.div
-                      key={t.ticket_id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ delay: idx * 0.05 }}
-                    >
-                      <Link 
-                        to={`/tickets/${t.ticket_id}`}
-                        className="flex flex-col sm:flex-row items-start sm:items-center p-4 hover:bg-muted/50 transition-colors gap-4 group"
-                      >
-                        <div className="flex-shrink-0 w-12 flex justify-center">
-                          <SLARing state={currentState} size="md" />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-mono text-sm text-muted-foreground">
-                              {t.ticket_id}
-                            </span>
-                            <h3 className="font-medium truncate group-hover:text-primary transition-colors">
-                              {t.subject}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground truncate">
-                            <span className="font-medium text-foreground/80">{t.customer_name}</span>
-                            <span>•</span>
-                            <span>Created {format(new Date(t.created_at), "MMM d, yyyy")}</span>
-                          </div>
-                        </div>
+          ) : null}
 
-                        <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 w-full sm:w-auto">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={t.priority === "Urgent" ? "destructive" : "secondary"}>
-                              {t.priority}
-                            </Badge>
-                            <StatusBadge status={t.status} />
-                          </div>
-                          {t.status !== "Closed" && (
-                            <span className={`text-xs font-medium ${
-                              currentState === 'overdue' ? 'text-rose-500' :
-                              currentState === 'at_risk' ? 'text-amber-500' : 'text-emerald-500'
-                            }`}>
-                              {formatTimeLeft(t.due_at, now, t.status)}
-                            </span>
-                          )}
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
-          )}
+          <div className="divide-y divide-[var(--td-border)]">
+            <AnimatePresence mode="popLayout">
+              {tickets.map((t, idx) => (
+                <TicketRow key={t.ticket_id} ticket={t} now={now} index={idx} />
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              Showing {offset + 1} to {Math.min(offset + limit, total)} of {total} tickets
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-sm text-[var(--td-muted)] font-medium">
+              Showing {offset + 1} to {Math.min(offset + limit, total)} of {total}
             </p>
             <div className="flex items-center gap-2">
               <Button
