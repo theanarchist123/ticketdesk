@@ -171,7 +171,7 @@ export default function TicketDetailPage() {
 
           <div className="mt-4">
             <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-              <History className="w-5 h-5" /> Activity Timeline
+              <History className="w-5 h-5" /> Activity timeline
             </h3>
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-muted before:to-transparent">
               
@@ -233,7 +233,7 @@ export default function TicketDetailPage() {
                   disabled={!noteText.trim() || updateTicket.isPending}
                 >
                   <Send className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Add Note</span>
+                  <span className="hidden sm:inline">Add note</span>
                 </Button>
               </CardContent>
             </Card>
@@ -260,8 +260,7 @@ export default function TicketDetailPage() {
                 {ticket.status !== "Closed" && (
                   <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
                     <Clock className="w-4 h-4" />
-                    {currentState === 'overdue' ? 'Overdue by ' : 'Due in '}
-                    <span className="font-medium text-foreground">{formatTimeLeft(ticket.due_at, now)}</span>
+                    <span className="font-medium text-foreground">{formatTimeLeft(ticket.due_at, now, ticket.status)}</span>
                   </p>
                 )}
                 {ticket.resolved_at && (
@@ -280,7 +279,7 @@ export default function TicketDetailPage() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Status</label>
                   <Select value={ticket.status} onValueChange={handleUpdateStatus}>
                     <SelectTrigger className="w-full font-medium">
                       <SelectValue />
@@ -294,7 +293,7 @@ export default function TicketDetailPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Priority</label>
+                  <label className="text-xs font-semibold text-muted-foreground">Priority</label>
                   <Select value={ticket.priority} onValueChange={handleUpdatePriority}>
                     <SelectTrigger className="w-full font-medium">
                       <SelectValue />

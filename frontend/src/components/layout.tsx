@@ -1,8 +1,9 @@
 import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router";
-import { LayoutDashboard, Ticket, Settings, Bell, Search, User } from "lucide-react";
+import { LayoutDashboard, Ticket, Bell, Search, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useStats, useTickets } from "@/hooks/useTickets";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,16 +12,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
   { icon: Ticket, label: "Tickets", href: "/tickets" },
-  { icon: Settings, label: "Settings", href: "/settings" },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const isTicketsPage = location.pathname === "/tickets";
+  
+  const { data: stats } = useStats();
+  // Request overdue tickets (sla param will be supported in Phase 2)
+  const { data: overdueTickets } = useTickets({ limit: 5, sla: "overdue" } as any);
+  const overdueCount = stats?.overdue || 0;
 
   return (
     <div className="flex min-h-screen bg-background text-foreground selection:bg-primary/20">
@@ -60,11 +65,10 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="p-4 border-t">
           <div className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted transition-colors cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-              <User className="w-4 h-4 text-muted-foreground" />
+              <Users className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium leading-none mb-1">Admin User</span>
-              <span className="text-xs text-muted-foreground">admin@ticketdesk.com</span>
+              <span className="text-sm font-medium leading-none">Support team</span>
             </div>
           </div>
         </div>
@@ -75,32 +79,70 @@ export function Layout({ children }: { children: ReactNode }) {
         {/* Top Navbar */}
         <header className="h-16 border-b bg-background/80 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between px-8">
           <div className="relative w-96">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search tickets (ID, name, subject)..."
-              className="w-full pl-9 bg-muted/50 border-none focus-visible:ring-1"
-            />
+            {!isTicketsPage && (
+              <button
+                className="w-full flex items-center justify-between px-3 py-2 text-sm text-muted-foreground bg-muted/50 border rounded-md hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                onClick={() => {/* Command Palette hook phase 6 */}}
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  <span>Search tickets...</span>
+                </div>
+                <kbd className="inline-flex items-center rounded border px-1.5 font-mono text-[10px] font-medium opacity-100">
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-              <Bell className="w-5 h-5" />
-            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <span>Create</span>
+                <Button variant="ghost" size="icon" className="text-muted-foreground relative">
+                  <Bell className="w-5 h-5" />
+                  {overdueCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-background" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel className="flex justify-between items-center">
+                  Overdue Tickets
+                  {overdueCount > 0 && (
+                    <span className="bg-rose-500/10 text-rose-500 text-xs px-2 py-0.5 rounded-full">
+                      {overdueCount}
+                    </span>
+                  )}
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/tickets/new">New Ticket</Link>
-                </DropdownMenuItem>
+                {(!overdueTickets?.data || overdueTickets.data.length === 0) ? (
+                  <div className="py-4 text-center text-sm text-muted-foreground">
+                    Nothing is overdue.
+                  </div>
+                ) : (
+                  <>
+                    {overdueTickets.data.map((ticket) => (
+                      <DropdownMenuItem key={ticket.ticket_id} asChild>
+                        <Link to={`/tickets/${ticket.ticket_id}`} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
+                          <span className="text-sm font-medium leading-none">{ticket.subject}</span>
+                          <span className="text-xs text-muted-foreground truncate w-full">{ticket.ticket_id} • {ticket.customer_name}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="justify-center text-primary font-medium">
+                      <Link to="/tickets?sla=overdue">View all overdue</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
+            
+            {!isTicketsPage && (
+              <Button asChild>
+                <Link to="/tickets/new">New ticket</Link>
+              </Button>
+            )}
           </div>
         </header>
 

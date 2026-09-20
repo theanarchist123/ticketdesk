@@ -7,11 +7,12 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { SLARing } from "@/components/ui/sla-ring";
 import { computeFrontendSlaState } from "@/lib/sla";
-import { formatTimeLeft } from "@/lib/format";
+import { formatTimeAgo, formatTimeLeft } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { 
   Select, 
   SelectContent, 
@@ -32,7 +33,7 @@ export default function TicketsPage() {
 
   const debouncedSearch = useDebounce(searchInput, 500);
 
-  const { data, isLoading, isError } = useTickets({
+  const { data, isLoading, isError, dataUpdatedAt } = useTickets({
     status: statusFilter !== "all" ? statusFilter : undefined,
     search: debouncedSearch || undefined,
     limit,
@@ -70,14 +71,13 @@ export default function TicketsPage() {
       <div className="flex flex-col gap-6 max-w-[1200px] mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Support Queue</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Support queue</h1>
             <p className="text-muted-foreground mt-1 flex items-center gap-2">
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Live monitoring active. {total} tickets found.
+              {total} tickets &middot; Updated {dataUpdatedAt ? formatTimeAgo(new Date(dataUpdatedAt).toISOString()) : "just now"}
             </p>
           </div>
           <Button asChild>
-            <Link to="/tickets/new">Create Ticket</Link>
+            <Link to="/tickets/new">New ticket</Link>
           </Button>
         </div>
 
@@ -97,14 +97,14 @@ export default function TicketsPage() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={handleStatusChange}>
-              <SelectTrigger className="w-[140px] border-none bg-background/50">
+              <SelectTrigger className="min-w-[160px] border-none bg-background/50">
                 <SlidersHorizontal className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="all">All statuses</SelectItem>
                 <SelectItem value="Open">Open</SelectItem>
-                <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="In Progress">In progress</SelectItem>
                 <SelectItem value="Closed">Closed</SelectItem>
               </SelectContent>
             </Select>
@@ -176,20 +176,14 @@ export default function TicketsPage() {
                             <Badge variant={t.priority === "Urgent" ? "destructive" : "secondary"}>
                               {t.priority}
                             </Badge>
-                            <Badge variant="outline" className={
-                              t.status === "Open" ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/10" :
-                              t.status === "In Progress" ? "text-amber-500 border-amber-500/20 bg-amber-500/10" : ""
-                            }>
-                              {t.status}
-                            </Badge>
+                            <StatusBadge status={t.status} />
                           </div>
                           {t.status !== "Closed" && (
                             <span className={`text-xs font-medium ${
                               currentState === 'overdue' ? 'text-rose-500' :
                               currentState === 'at_risk' ? 'text-amber-500' : 'text-emerald-500'
                             }`}>
-                              {currentState === 'overdue' ? 'Overdue by ' : 'Due in '}
-                              {formatTimeLeft(t.due_at, now)}
+                              {formatTimeLeft(t.due_at, now, t.status)}
                             </span>
                           )}
                         </div>

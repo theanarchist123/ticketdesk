@@ -10,6 +10,7 @@ export function useTickets(params?: {
   return useQuery({
     queryKey: ["tickets", params],
     queryFn: () => fetchTickets(params),
+    refetchInterval: 30000,
   });
 }
 

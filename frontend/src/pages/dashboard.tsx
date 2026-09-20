@@ -125,7 +125,7 @@ export default function DashboardPage() {
                           {ticket.subject}
                         </p>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {ticket.ticket_id} • {ticket.customer_name}
+                          {formatTimeLeft(ticket.due_at, now, ticket.status)} • {ticket.customer_name}
                         </p>
                       </div>
                       <div className="shrink-0 text-right">

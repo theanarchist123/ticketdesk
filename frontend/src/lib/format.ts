@@ -10,19 +10,32 @@ export function formatDateTime(isoString: string): string {
   return format(date, "MMM d, yyyy h:mm a");
 }
 
-export function formatTimeLeft(dueAtIso: string, now: Date): string {
+export function formatTimeLeft(dueAtIso: string, now: Date, status?: string): string {
+  if (status === "Closed") {
+    return "Resolved";
+  }
+
   const due = new Date(dueAtIso).getTime();
   const nowMs = now.getTime();
   
-  if (nowMs >= due) {
-    const overdueMs = nowMs - due;
-    const hours = Math.floor(overdueMs / (1000 * 60 * 60));
-    const mins = Math.floor((overdueMs % (1000 * 60 * 60)) / (1000 * 60));
-    return `-${hours}h ${mins}m`;
+  const diffMs = due - nowMs;
+  const isOverdue = diffMs < 0;
+  const absDiff = Math.abs(diffMs);
+  
+  const totalMinutes = Math.floor(absDiff / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  
+  let formatted = "";
+  if (totalMinutes < 60) {
+    formatted = `${totalMinutes}m`;
+  } else if (hours < 48) {
+    formatted = `${hours}h ${minutes}m`;
+  } else {
+    formatted = `${days}d ${remainingHours}h`;
   }
   
-  const remainingMs = due - nowMs;
-  const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-  const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-  return `${hours}h ${mins}m`;
+  return isOverdue ? `${formatted} overdue` : `Due in ${formatted}`;
 }

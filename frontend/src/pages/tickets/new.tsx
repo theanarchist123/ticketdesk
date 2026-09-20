@@ -70,7 +70,7 @@ export default function NewTicketPage() {
             <Link to="/tickets"><ArrowLeft className="w-5 h-5" /></Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">New Ticket</h1>
+            <h1 className="text-3xl font-bold tracking-tight">New ticket</h1>
             <p className="text-muted-foreground mt-1">
               Create a new customer support ticket.
             </p>
@@ -82,7 +82,7 @@ export default function NewTicketPage() {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle>Ticket Details</CardTitle>
+                  <CardTitle>Ticket details</CardTitle>
                   <CardDescription>Fill out the information below to log the issue.</CardDescription>
                 </div>
                 <div className="bg-muted px-3 py-1 rounded-md border font-mono text-sm text-muted-foreground">
@@ -94,7 +94,7 @@ export default function NewTicketPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customer_name">Customer Name</Label>
+                  <Label htmlFor="customer_name">Customer name</Label>
                   <Input 
                     id="customer_name" 
                     placeholder="Jane Doe" 
@@ -107,7 +107,7 @@ export default function NewTicketPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="customer_email">Customer Email</Label>
+                  <Label htmlFor="customer_email">Customer email</Label>
                   <Input 
                     id="customer_email" 
                     type="email"
@@ -178,7 +178,7 @@ export default function NewTicketPage() {
                 {(isSubmitting || createTicket.isPending) && (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 )}
-                Create Ticket
+                Create ticket
               </Button>
             </CardFooter>
           </Card>
