@@ -9,7 +9,7 @@ import { QueueToolbar } from "@/components/ticket/queue-toolbar";
 import { TicketRow } from "@/components/ticket/ticket-row";
 import { formatTimeAgo } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, AlertCircle, TicketIcon } from "lucide-react";
+import { AlertCircle, TicketIcon } from "lucide-react";
 
 export default function TicketsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
