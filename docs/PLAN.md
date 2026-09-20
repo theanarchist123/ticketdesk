@@ -1,7 +1,9 @@
 # TicketDesk: Build Plan
 
 A support ticketing CRM for the Datastraw assessment.
-Stack: **FastAPI + SQLite** (backend) · **React + Vite + TypeScript + Tailwind + shadcn/ui + Animate UI** (frontend) · **Railway** (deploy).
+- Backend: Python, FastAPI, SQLAlchemy 2.0, Pydantic v2, PostgreSQL, pytest
+- Frontend: React 19 + Vite + TypeScript, Tailwind CSS v4, **shadcn/ui**, **Animate UI** (installed through the shadcn CLI registry), `motion`, TanStack Query, React Router, react-hook-form + zod, lucide-react, date-fns
+- Deploy: Render (single Docker service, FastAPI serves the built React app, Render PostgreSQL)
 
 Save this file as `docs/PLAN.md` in the repo. It is the single source of truth for the build.
 
@@ -24,13 +26,13 @@ Small support teams (online stores, SaaS startups) track customer complaints acr
 
 ## 2. Architecture
 
-One deployable service. FastAPI serves the JSON API under `/api` and also serves the built React app, so there is no CORS setup in production and only one Railway service.
+One deployable service. FastAPI serves the JSON API under `/api` and also serves the built React app, so there is no CORS setup in production and only one Render service.
 
 ```
 Browser (React SPA)
    │  fetch /api/...
    ▼
-FastAPI  ──►  SQLAlchemy  ──►  SQLite file on a Railway volume (/data/tickets.db)
+FastAPI  ──►  SQLAlchemy  ──►  Render PostgreSQL database
    │
    └── serves frontend/dist for every non-/api route (SPA fallback)
 ```
@@ -400,14 +402,14 @@ Each phase ends with a check. Commit at the end of every phase.
 
 ---
 
-## 9. Deployment (Railway)
+## 9. Deployment (Render)
 
 1. **Dockerfile (multi-stage):** stage 1 `node:22-alpine` runs `npm ci && npm run build` in `frontend/`. Stage 2 `python:3.12-slim` installs `requirements.txt`, copies `backend/` and the built `dist/` into `backend/static`, then runs `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
 2. **Static serving:** mount `/assets` from the build output and return `index.html` for any non-`/api` path so React Router deep links work on refresh.
-3. **Persistence:** SQLite lives on a file, and container filesystems reset on every deploy. Attach a **Railway volume** mounted at `/data` and set `DATABASE_URL=sqlite:////data/tickets.db`. Without this, tickets vanish on redeploy and the evaluators may see an empty app.
+3. **Persistence:** Use a **Render PostgreSQL** database. Set `DATABASE_URL` to the internal database URL provided by Render.
 4. **Env vars:** `DATABASE_URL`, `SEED_DEMO=true`, `CORS_ORIGINS` (dev only). Commit `.env.example`, never `.env`.
 5. **Health check:** `/api/health`.
-6. Check Railway's current free-trial and pricing limits before you rely on it. If it is not workable, Render supports the same Dockerfile, and the assignment allows either.
+6. Check Render's current free-trial and pricing limits before you rely on it.
 
 Deployment note from the PDF: do not spend hours on this. Getting it live matters more than perfecting it.
 

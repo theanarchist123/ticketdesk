@@ -9,10 +9,10 @@ This document provides a brief overview of the architecture of TicketDesk, inten
 
 ## Deployment Architecture
 
-TicketDesk is designed to be deployed as a single service on platforms like Railway or Render. 
+TicketDesk is designed to be deployed as a single service on platforms like Render.
 
 1. **Single Service:** FastAPI acts as both the API server (handling `/api/*` routes) and the static file server (serving the built React app from `frontend/dist/` for all other routes). This eliminates CORS configuration issues in production and keeps the deployment simple.
-2. **Database:** We use SQLite for data storage. Since container filesystems are ephemeral (they reset on every deploy), we mount a persistent volume at `/data` and point our `DATABASE_URL` to `sqlite:////data/tickets.db`. This ensures that tickets survive redeployments.
+2. **Database:** We use a managed PostgreSQL database (like Render PostgreSQL). The `DATABASE_URL` environment variable points to this external database, ensuring data persistence across redeployments without needing to mount local disk volumes.
 3. **Multi-stage Docker Build:** A single `Dockerfile` builds both the frontend and backend. Stage 1 uses Node to build the React app, and Stage 2 uses Python to install backend dependencies, copy the built frontend assets, and run the FastAPI server.
 
 ## Data Model

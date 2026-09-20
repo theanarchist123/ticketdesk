@@ -49,7 +49,7 @@ Navigate to `http://localhost:5173`
 ## Environment Variables
 
 See `.env.example` for details. You need:
-- `DATABASE_URL=sqlite:///./tickets.db`
+- `DATABASE_URL=postgresql://user:password@hostname/dbname` (or sqlite for local testing)
 - `SEED_DEMO=true`
 - `CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173`
 

@@ -18,10 +18,11 @@ engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 # Enable WAL mode and foreign keys for SQLite connections.
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragma(dbapi_conn, _connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+    if engine.dialect.name == "sqlite":
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
