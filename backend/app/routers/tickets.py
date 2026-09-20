@@ -67,6 +67,7 @@ def api_get_ticket(ticket_id: str, db: Session = Depends(get_db)):
 def api_update_ticket(ticket_id: str, body: TicketUpdate, db: Session = Depends(get_db)):
     result = update_ticket(
         db, ticket_id,
+        subject=body.subject,
         status=body.status,
         priority=body.priority,
         notes=body.notes,

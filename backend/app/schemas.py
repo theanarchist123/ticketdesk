@@ -21,14 +21,15 @@ class NoteCreate(BaseModel):
 
 
 class TicketUpdate(BaseModel):
+    subject: str | None = Field(None, min_length=3, max_length=120)
     status: Literal["Open", "In Progress", "Closed"] | None = None
     priority: Literal["Low", "Medium", "High", "Urgent"] | None = None
     notes: str | None = Field(None, min_length=1, max_length=4000)
 
     def model_post_init(self, __context):
         """Ensure at least one field is provided."""
-        if self.status is None and self.priority is None and self.notes is None:
-            raise ValueError("Provide at least one of: status, priority, notes")
+        if self.subject is None and self.status is None and self.priority is None and self.notes is None:
+            raise ValueError("Provide at least one of: subject, status, priority, notes")
 
 
 # ── Response schemas ──────────────────────────────────────────────────────────

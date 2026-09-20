@@ -195,11 +195,12 @@ def update_ticket(
     db: Session,
     ticket_id: str,
     *,
+    subject: str | None = None,
     status: str | None = None,
     priority: str | None = None,
     notes: str | None = None,
 ) -> dict | None:
-    """Update a ticket's status, priority, and/or add a note.
+    """Update a ticket's subject, status, priority, and/or add a note.
 
     If status changes, a system note is also created for the activity timeline.
     If priority changes, due_at is recomputed from created_at.
@@ -209,6 +210,17 @@ def update_ticket(
         return None
 
     now = _utcnow()
+
+    # ── Subject change ────────────────────────────────────────────────────
+    if subject and subject != ticket.subject:
+        old_subject = ticket.subject
+        ticket.subject = subject
+        db.add(Note(
+            ticket_id=ticket.id,
+            note_text=f"Subject changed from '{old_subject}' to '{subject}'",
+            kind="note",
+            created_at=now,
+        ))
 
     # ── Status change ─────────────────────────────────────────────────────
     if status and status != ticket.status:
