@@ -27,3 +27,18 @@ export function computeFrontendSlaState(
   if (remainingMs < windowMs * 0.25) return "at_risk";
   return "on_track";
 }
+
+export function getSlaColor(state: SLAState): string {
+  switch (state) {
+    case "on_track":
+      return "text-muted-foreground";
+    case "at_risk":
+      return "text-orange-500";
+    case "overdue":
+      return "text-rose-500";
+    case "resolved":
+      return "text-emerald-500";
+    default:
+      return "text-muted-foreground";
+  }
+}

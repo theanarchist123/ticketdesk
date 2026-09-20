@@ -7,12 +7,18 @@ export async function fetchTickets(params?: {
   search?: string;
   limit?: number;
   offset?: number;
+  priority?: string;
+  sla?: string;
+  sort?: string;
 }): Promise<{ data: TicketListItem[]; total: number }> {
   const url = new URL(`${window.location.origin}${API_BASE}/tickets`);
   if (params?.status) url.searchParams.append("status", params.status);
   if (params?.search) url.searchParams.append("search", params.search);
   if (params?.limit) url.searchParams.append("limit", params.limit.toString());
   if (params?.offset) url.searchParams.append("offset", params.offset.toString());
+  if (params?.priority) url.searchParams.append("priority", params.priority);
+  if (params?.sla) url.searchParams.append("sla", params.sla);
+  if (params?.sort) url.searchParams.append("sort", params.sort);
 
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error("Failed to fetch tickets");

@@ -6,6 +6,9 @@ export function useTickets(params?: {
   search?: string;
   limit?: number;
   offset?: number;
+  priority?: string;
+  sla?: string;
+  sort?: string;
 }) {
   return useQuery({
     queryKey: ["tickets", params],

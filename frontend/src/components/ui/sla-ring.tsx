@@ -38,31 +38,46 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
   
   const { color, pulse } = stateConfig[state];
 
+  const totalWindowMs = (SLA_HOURS[priority] || 24) * 3600000;
+  const elapsedMs = now.getTime() - new Date(createdAt).getTime();
+  const rawRatio = elapsedMs / totalWindowMs;
+  const ratio = Math.max(0, Math.min(1, rawRatio)); // clamp 0-1
+
+  const isFullRing = state === "resolved" || state === "overdue";
+
   if (size === "sm") {
-    // Solid dot when animate=false (e.g. used in the preview perhaps? actually the spec says "solid circle (dot) if animate=false")
     if (!animate) {
-      // replace text- with bg-
       const bgColor = color.replace("text-", "bg-");
       return (
         <div className={cn("w-2 h-2 rounded-full shrink-0", bgColor, className)} />
       );
     }
 
-    // 20px ring
+    const radius = 8;
+    const circumference = radius * 2 * Math.PI;
+    const offset = isFullRing ? 0 : circumference * (1 - ratio);
+
     return (
       <div className={cn("relative inline-flex items-center justify-center shrink-0 w-5 h-5", color, className)}>
         <svg width="20" height="20" viewBox="0 0 20 20" className="transform -rotate-90">
-          <circle cx="10" cy="10" r="8" className="fill-none stroke-current opacity-20" strokeWidth="2.5" />
+          <circle cx="10" cy="10" r="8" className="fill-none stroke-current opacity-40" strokeWidth="2.5" />
           <motion.circle 
             cx="10" cy="10" r="8" 
             className="fill-none stroke-current" 
             strokeWidth="2.5" 
-            strokeDasharray={8 * 2 * Math.PI}
-            initial={{ strokeDashoffset: 8 * 2 * Math.PI }}
-            animate={{ strokeDashoffset: state === "resolved" ? 0 : (8 * 2 * Math.PI) * 0.25 }}
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
             transition={{ duration: 1, ease: "easeOut" }}
           />
         </svg>
+        {state === "resolved" && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+        )}
         {pulse && (
           <motion.div
             className="absolute inset-0 rounded-full border-2 border-current"
@@ -76,20 +91,14 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
   }
 
   // Large 160px ring for the detail panel
-  const totalWindowMs = (SLA_HOURS[priority] || 24) * 3600000;
-  const elapsedMs = now.getTime() - new Date(createdAt).getTime();
-  const rawRatio = elapsedMs / totalWindowMs;
-  const ratio = Math.max(0, Math.min(1, rawRatio)); // clamp 0-1
-  
   const radius = 76;
   const circumference = radius * 2 * Math.PI;
-  // If resolved, we can just show a full ring
-  const offset = state === "resolved" ? 0 : circumference * (1 - ratio);
+  const offset = isFullRing ? 0 : circumference * (1 - ratio);
 
   return (
     <div className={cn("relative inline-flex items-center justify-center shrink-0 w-[160px] h-[160px]", color, className)}>
       <svg width="160" height="160" viewBox="0 0 160 160" className="transform -rotate-90">
-        <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-20" strokeWidth="6" />
+        <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-40" strokeWidth="6" />
         
         {state === "on_track" && (
            <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-[0.15]" strokeWidth="12" filter="blur(6px)" />
@@ -106,6 +115,13 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
           style={{ filter: "drop-shadow(0 0 6px currentColor)" }}
         />
       </svg>
+      {state === "resolved" && (
+        <div className="absolute inset-0 flex items-center justify-center text-current">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+      )}
     </div>
   );
 }

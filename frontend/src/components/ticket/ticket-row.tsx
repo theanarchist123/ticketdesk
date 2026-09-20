@@ -8,6 +8,10 @@ import { PriorityMark } from "@/components/ui/priority-mark";
 import { formatTimeLeft } from "@/lib/format";
 import { computeFrontendSlaState } from "@/lib/sla";
 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatTimeAgo } from "@/lib/format";
+import { getSlaColor } from "@/lib/sla";
+
 export interface TicketRowProps {
   ticket: any;
   now: Date;
@@ -57,20 +61,42 @@ export function TicketRow({ ticket, now, index = 0 }: TicketRowProps) {
             <Avatar name={ticket.customer_name} email={ticket.customer_email || ticket.customer_name} size="sm" />
             <span className="font-medium text-[var(--td-text)]">{ticket.customer_name}</span>
             <span>•</span>
-            <span>Created {format(new Date(ticket.created_at), "MMM d, yyyy")}</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-default border-b border-dashed border-transparent hover:border-current transition-colors">
+                    Created {formatTimeAgo(ticket.created_at)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{format(new Date(ticket.created_at), "MMM d, yyyy h:mm a")}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
 
         <div className="flex sm:flex-col items-center sm:items-end gap-3 sm:gap-2 w-full sm:w-auto">
           <div className="flex items-center gap-2">
-            <PriorityMark priority={ticket.priority} />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1">
+                    <PriorityMark priority={ticket.priority} aria-label={ticket.priority} />
+                    <span className="hidden md:inline-block text-xs font-medium text-[var(--td-muted)]">
+                      {ticket.priority}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="md:hidden">
+                  <p>{ticket.priority}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <StatusBadge status={ticket.status} />
           </div>
           {ticket.status !== "Closed" && (
-            <span className={`text-xs font-medium ${
-              currentState === 'overdue' ? 'text-[var(--td-sla-overdue)]' :
-              currentState === 'at_risk' ? 'text-[var(--td-sla-at-risk)]' : 'text-[var(--td-sla-resolved)]'
-            }`}>
+            <span className={`text-xs font-medium ${getSlaColor(currentState)}`}>
               {formatTimeLeft(ticket.due_at, now, ticket.status)}
             </span>
           )}

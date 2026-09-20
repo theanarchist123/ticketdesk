@@ -17,42 +17,51 @@ export default function TicketsPage() {
   
   const statusFilter = searchParams.get("status") || "all";
   const searchInput = searchParams.get("search") || "";
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = 15;
-  const offset = (page - 1) * limit;
+  const priorityFilter = searchParams.get("priority") || "all";
+  const sortFilter = searchParams.get("sort") || "priority_sla";
+  const slaFilter = searchParams.get("sla") || "all";
+  
+  // Use limit for "Load more", starting at 15
+  const limit = parseInt(searchParams.get("limit") || "15", 10);
+  const offset = 0; // Always start at 0, limit expands
 
   const debouncedSearch = useDebounce(searchInput, 300);
 
+  const { data: stats } = useStats();
   const { data, isLoading, isError, dataUpdatedAt } = useTickets({
     status: statusFilter !== "all" ? statusFilter : undefined,
     search: debouncedSearch || undefined,
+    priority: priorityFilter !== "all" ? priorityFilter : undefined,
+    sort: sortFilter !== "priority_sla" ? sortFilter : undefined,
+    sla: slaFilter !== "all" ? slaFilter : undefined,
     limit,
     offset,
   });
 
   const total = data?.total || 0;
-  const totalPages = Math.ceil(total / limit);
   const tickets = data?.data || [];
+  const hasMore = tickets.length < total;
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const updateParams = (updates: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams);
-    if (e.target.value) {
-      next.set("search", e.target.value);
-    } else {
-      next.delete("search");
+    for (const [key, val] of Object.entries(updates)) {
+      if (val === null || val === "all" || (key === "sort" && val === "priority_sla")) {
+        next.delete(key);
+      } else {
+        next.set(key, val);
+      }
     }
-    next.set("page", "1");
+    next.delete("limit"); // reset limit when filters change
     setSearchParams(next);
   };
 
-  const handleStatusChange = (val: string) => {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateParams({ search: e.target.value || null });
+  };
+
+  const handleLoadMore = () => {
     const next = new URLSearchParams(searchParams);
-    if (val !== "all") {
-      next.set("status", val);
-    } else {
-      next.delete("status");
-    }
-    next.set("page", "1");
+    next.set("limit", (limit + 15).toString());
     setSearchParams(next);
   };
 
@@ -71,16 +80,36 @@ export default function TicketsPage() {
           </Button>
         </div>
 
+        {stats?.overdue ? (
+          <div className="bg-[var(--td-sla-overdue)]/10 text-[var(--td-sla-overdue)] text-sm px-4 py-3 rounded-lg flex items-center justify-between border border-[var(--td-sla-overdue)]/20">
+            <div className="flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4" />
+              <span>{stats.overdue} ticket{stats.overdue > 1 ? 's are' : ' is'} past their response time</span>
+            </div>
+            <button 
+              onClick={() => updateParams({ sla: "overdue", status: "all" })}
+              className="font-semibold hover:underline"
+            >
+              Show them
+            </button>
+          </div>
+        ) : null}
+
         <QueueToolbar
           searchInput={searchInput}
           onSearchChange={handleSearch}
           statusFilter={statusFilter}
-          onStatusChange={handleStatusChange}
+          onStatusChange={(v) => updateParams({ status: v })}
+          priorityFilter={priorityFilter}
+          onPriorityChange={(v) => updateParams({ priority: v })}
+          sortFilter={sortFilter}
+          onSortChange={(v) => updateParams({ sort: v })}
+          stats={stats}
         />
 
         {/* Ticket List */}
         <div className="bg-[var(--td-surface)] border border-[var(--td-border)] rounded-xl overflow-hidden shadow-sm min-h-[400px] relative">
-          {isLoading ? (
+          {isLoading && !tickets.length ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-muted)] gap-4 bg-[var(--td-surface)]/50 backdrop-blur-sm z-10">
               <div className="h-8 w-8 border-2 border-[var(--td-primary)] border-t-transparent rounded-full animate-spin" />
               <p className="font-medium animate-pulse">Loading queue...</p>
@@ -100,7 +129,7 @@ export default function TicketsPage() {
                 <h3 className="font-semibold text-lg text-[var(--td-text)]">No tickets found</h3>
                 <p className="mt-1 max-w-sm mx-auto">We couldn't find any tickets matching your current filters. Try adjusting your search or clearing the status filter.</p>
               </div>
-              {(searchInput || statusFilter !== "all") && (
+              {(searchInput || statusFilter !== "all" || priorityFilter !== "all" || slaFilter !== "all") && (
                 <Button 
                   variant="outline" 
                   className="mt-2"
@@ -121,38 +150,17 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-sm text-[var(--td-muted)] font-medium">
-              Showing {offset + 1} to {Math.min(offset + limit, total)} of {total}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => {
-                  const next = new URLSearchParams(searchParams);
-                  next.set("page", (page - 1).toString());
-                  setSearchParams(next);
-                }}
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= totalPages}
-                onClick={() => {
-                  const next = new URLSearchParams(searchParams);
-                  next.set("page", (page + 1).toString());
-                  setSearchParams(next);
-                }}
-              >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </div>
+        {/* Pagination -> Load more */}
+        {hasMore && (
+          <div className="flex justify-center mt-2">
+            <Button
+              variant="outline"
+              disabled={isLoading}
+              onClick={handleLoadMore}
+              className="w-full sm:w-auto min-w-[200px]"
+            >
+              {isLoading ? "Loading..." : `Load more (${total - tickets.length} remaining)`}
+            </Button>
           </div>
         )}
       </div>
