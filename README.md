@@ -206,25 +206,25 @@ I tested all the API endpoints on the live deployed backend using Postman. Here 
 
 ### 1. POST — Creating a New Ticket
 
-![POST request creating a new ticket with 201 Created response](WhatsApp%20Image%202026-09-20%20at%2018.51.48.jpeg)
+![POST request creating a new ticket with 201 Created response](.github/assets/screenshot1.jpeg)
 
 I sent a `POST` request to `https://ticketdesk-92r3.onrender.com/api/tickets` with a JSON body containing customer details, subject ("Security issues!!"), priority ("Urgent"), and a description. The API responded with `201 Created` and returned the new ticket's ID (`TKT-035`), creation timestamp, and the computed `due_at` deadline. Since the priority is Urgent, the SLA deadline was automatically set to 4 hours from creation.
 
 ### 2. PUT — Updating a Ticket's Status and Priority
 
-![PUT request updating ticket status to In Progress and priority to High](WhatsApp%20Image%202026-09-20%20at%2018.53.25.jpeg)
+![PUT request updating ticket status to In Progress and priority to High](.github/assets/screenshot2.jpeg)
 
 I sent a `PUT` request to update ticket `TKT-016` — changing its status to "In Progress" and priority to "High". The API responded with `200 OK` and confirmed the update timestamp. Behind the scenes, this also created two system notes in the activity timeline ("Status changed from Open to In Progress" and "Priority changed from Medium to High") and recomputed the SLA deadline based on the new priority.
 
 ### 3. GET — Fetching a Single Ticket's Full Details
 
-![GET request fetching full details of ticket TKT-014](WhatsApp%20Image%202026-09-20%20at%2018.54.54.jpeg)
+![GET request fetching full details of ticket TKT-014](.github/assets/screenshot3.jpeg)
 
 I fetched the full details of ticket `TKT-014` ("Gift card balance showing zero"). The response includes all the ticket metadata, the computed `sla_state` ("on_track" because the deadline hasn't passed), timestamps, and the notes array (empty because no notes have been added yet). This is what powers the ticket detail page in the frontend.
 
 ### 4. GET — Dashboard Statistics
 
-![GET request fetching dashboard stats showing counts and SLA metrics](WhatsApp%20Image%202026-09-20%20at%2018.55.44.jpeg)
+![GET request fetching dashboard stats showing counts and SLA metrics](.github/assets/screenshot4.jpeg)
 
 I hit the `/api/stats` endpoint to get the dashboard overview data. The response shows 35 total tickets, with 13 open, 10 in progress, and 12 closed. There are 6 overdue tickets and 2 at risk. The `sla_met_pct` is 83.3%, meaning about 5 out of 6 closed tickets were resolved within their SLA window. The `by_priority` breakdown shows the distribution of active tickets across priority levels.
 
