@@ -1,0 +1,202 @@
+@import "tailwindcss";
+
+/* ── Fonts ─────────────────────────────────────────────────────────────────── */
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* ── Design tokens (§5 of PLAN.md) ────────────────────────────────────────── */
+
+/*
+ * Color system: dark-first "calm command center".
+ * Dark is default. Light is a full alternate via .light class on :root.
+ *
+ * Naming:
+ *   --background  = "Midnight"   (page background)
+ *   --surface     = "Deck"       (panels, table, side rail)
+ *   --raised      = "Lift"       (hover rows, inputs, popovers)
+ *   --border                     (structure, no shadows)
+ *   --foreground  = "Frost"      (primary text)
+ *   --muted       = "Mist"       (secondary text, meta)
+ *   --primary     = "Signal"     (brand: buttons, focus, on-track SLA)
+ *
+ * Semantic (always paired with icon/label, never color alone):
+ *   --status-open, --status-in-progress, --status-closed
+ *   --priority-urgent (= overdue), --priority-high (= at-risk)
+ */
+
+@theme inline {
+  /* Typography */
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Radius by hierarchy: 8px controls, 12px panels, 18px showcase, pill for badges */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
+
+  /* Colors — using oklch for all shadcn tokens */
+  --color-background: oklch(0.145 0.02 265);
+  --color-foreground: oklch(0.92 0.02 265);
+  --color-card: oklch(0.17 0.025 265);
+  --color-card-foreground: oklch(0.92 0.02 265);
+  --color-popover: oklch(0.17 0.025 265);
+  --color-popover-foreground: oklch(0.92 0.02 265);
+  --color-primary: oklch(0.58 0.2 270);
+  --color-primary-foreground: oklch(0.98 0 0);
+  --color-secondary: oklch(0.2 0.03 265);
+  --color-secondary-foreground: oklch(0.92 0.02 265);
+  --color-muted: oklch(0.2 0.03 265);
+  --color-muted-foreground: oklch(0.63 0.05 265);
+  --color-accent: oklch(0.2 0.03 265);
+  --color-accent-foreground: oklch(0.92 0.02 265);
+  --color-destructive: oklch(0.6 0.2 20);
+  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-border: oklch(0.25 0.03 265);
+  --color-input: oklch(0.25 0.03 265);
+  --color-ring: oklch(0.58 0.2 270);
+  --color-chart-1: oklch(0.58 0.2 270);
+  --color-chart-2: oklch(0.6 0.15 160);
+  --color-chart-3: oklch(0.7 0.12 80);
+  --color-chart-4: oklch(0.65 0.18 200);
+  --color-chart-5: oklch(0.6 0.2 20);
+
+  --color-sidebar: oklch(0.17 0.025 265);
+  --color-sidebar-foreground: oklch(0.92 0.02 265);
+  --color-sidebar-primary: oklch(0.58 0.2 270);
+  --color-sidebar-primary-foreground: oklch(0.98 0 0);
+  --color-sidebar-accent: oklch(0.2 0.03 265);
+  --color-sidebar-accent-foreground: oklch(0.92 0.02 265);
+  --color-sidebar-border: oklch(0.25 0.03 265);
+  --color-sidebar-ring: oklch(0.58 0.2 270);
+}
+
+/* ── Custom CSS variables (outside @theme for non-Tailwind usage) ──────── */
+
+:root {
+  /* Exact hex values from §5.2 for use in custom components */
+  --td-bg: #0E1220;
+  --td-surface: #151A2C;
+  --td-raised: #1D2340;
+  --td-border: #2A3152;
+  --td-text: #E8ECF8;
+  --td-muted: #8E97B8;
+  --td-primary: #7C7CFF;
+
+  /* Semantic — status */
+  --td-status-open: #38BDF8;
+  --td-status-in-progress: #FACC15;
+  --td-status-closed: #34D399;
+
+  /* Semantic — urgency (warm = needs attention) */
+  --td-urgent: #F43F5E;
+  --td-high: #FB7C3C;
+
+  /* SLA states */
+  --td-sla-on-track: #7C7CFF;
+  --td-sla-at-risk: #FB7C3C;
+  --td-sla-overdue: #F43F5E;
+  --td-sla-resolved: #34D399;
+
+  /* Inner highlight for dark panels (§5.4) */
+  --td-inner-highlight: inset 0 1px 0 rgb(255 255 255 / 0.04);
+
+  /* Closed row dimming */
+  --td-closed-opacity: 0.65;
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+
+.light {
+  --td-bg: #F4F6FB;
+  --td-surface: #FFFFFF;
+  --td-raised: #EEF1FA;
+  --td-border: #DEE3F0;
+  --td-text: #12162B;
+  --td-muted: #5B6385;
+  --td-primary: #5B5BF0;
+
+  --td-status-open: #0284C7;
+  --td-status-in-progress: #A16207;
+  --td-status-closed: #047857;
+
+  --td-urgent: #E11D48;
+  --td-high: #C2410C;
+
+  --td-sla-on-track: #5B5BF0;
+  --td-sla-at-risk: #C2410C;
+  --td-sla-overdue: #E11D48;
+  --td-sla-resolved: #047857;
+
+  --td-inner-highlight: inset 0 1px 0 rgb(255 255 255 / 0.6);
+  --td-closed-opacity: 0.7;
+
+  /* Override shadcn tokens for light mode */
+  --color-background: oklch(0.97 0.01 265);
+  --color-foreground: oklch(0.15 0.03 265);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.15 0.03 265);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.15 0.03 265);
+  --color-primary: oklch(0.5 0.22 270);
+  --color-primary-foreground: oklch(0.98 0 0);
+  --color-secondary: oklch(0.94 0.01 265);
+  --color-secondary-foreground: oklch(0.15 0.03 265);
+  --color-muted: oklch(0.94 0.01 265);
+  --color-muted-foreground: oklch(0.45 0.05 265);
+  --color-accent: oklch(0.94 0.01 265);
+  --color-accent-foreground: oklch(0.15 0.03 265);
+  --color-destructive: oklch(0.55 0.22 20);
+  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-border: oklch(0.88 0.02 265);
+  --color-input: oklch(0.88 0.02 265);
+  --color-ring: oklch(0.5 0.22 270);
+
+  --color-sidebar: oklch(0.97 0.01 265);
+  --color-sidebar-foreground: oklch(0.15 0.03 265);
+  --color-sidebar-primary: oklch(0.5 0.22 270);
+  --color-sidebar-primary-foreground: oklch(0.98 0 0);
+  --color-sidebar-accent: oklch(0.94 0.01 265);
+  --color-sidebar-accent-foreground: oklch(0.15 0.03 265);
+  --color-sidebar-border: oklch(0.88 0.02 265);
+  --color-sidebar-ring: oklch(0.5 0.22 270);
+}
+
+/* ── Base styles ──────────────────────────────────────────────────────────── */
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--td-bg);
+  color: var(--td-text);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Typography utility classes ───────────────────────────────────────────── */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
