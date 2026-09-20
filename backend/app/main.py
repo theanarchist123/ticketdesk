@@ -55,13 +55,8 @@ def health_check():
     return {"ok": True}
 
 
-# Import and include the ticket router (will be created in Phase 1).
-# Wrapped in try/except so scaffold boots even before the router exists.
-try:
-    from app.routers.tickets import router as tickets_router
-    app.include_router(tickets_router, prefix="/api")
-except ImportError:
-    pass
+from app.routers.tickets import router as tickets_router
+app.include_router(tickets_router, prefix="/api")
 
 
 # ── Static file serving (production) ─────────────────────────────────────────

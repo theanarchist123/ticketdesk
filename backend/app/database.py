@@ -42,4 +42,5 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """Create all tables if they don't already exist."""
+    from app.models import Ticket, Note  # Ensure models are registered
     Base.metadata.create_all(bind=engine)
