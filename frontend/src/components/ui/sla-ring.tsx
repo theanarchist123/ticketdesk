@@ -1,106 +1,112 @@
 import { motion } from "motion/react";
-import { Check, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNow } from "@/hooks/useNow";
+import { computeFrontendSlaState, SLA_HOURS } from "@/lib/sla";
 
-export type SLAState = "on_track" | "at_risk" | "overdue" | "resolved";
-
-interface SLARingProps {
-  state: SLAState;
-  size?: "sm" | "md" | "lg";
+export interface SlaRingProps {
+  dueAt: string;
+  createdAt: string;
+  status: string;
+  priority: string;
+  size?: "sm" | "lg";
+  animate?: boolean;
   className?: string;
 }
 
-const config = {
-  sm: { size: 24, strokeWidth: 3 },
-  md: { size: 36, strokeWidth: 4 },
-  lg: { size: 48, strokeWidth: 5 },
-};
-
 const stateConfig = {
   on_track: {
-    color: "text-emerald-500",
-    bgColor: "text-emerald-500/20",
+    color: "text-[var(--td-sla-on-track)]",
     pulse: false,
-    icon: Clock,
   },
   at_risk: {
-    color: "text-amber-500",
-    bgColor: "text-amber-500/20",
+    color: "text-[var(--td-sla-at-risk)]",
     pulse: true,
-    icon: Clock,
   },
   overdue: {
-    color: "text-rose-500",
-    bgColor: "text-rose-500/20",
+    color: "text-[var(--td-sla-overdue)]",
     pulse: true,
-    icon: Clock,
   },
   resolved: {
-    color: "text-neutral-400",
-    bgColor: "text-neutral-400/20",
+    color: "text-[var(--td-sla-resolved)]",
     pulse: false,
-    icon: Check,
   },
 };
 
-export function SLARing({ state, size = "md", className }: SLARingProps) {
-  const { size: svgSize, strokeWidth } = config[size];
-  const { color, bgColor, pulse, icon: Icon } = stateConfig[state];
+export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", animate = true, className }: SlaRingProps) {
+  const now = useNow(30000); // tick every 30s
+  const state = computeFrontendSlaState(status, dueAt, createdAt, priority, now);
+  
+  const { color, pulse } = stateConfig[state];
+  const shouldAnimate = animate && state !== "resolved";
 
-  const radius = (svgSize - strokeWidth) / 2;
+  if (size === "sm") {
+    // Solid dot when animate=false (e.g. used in the preview perhaps? actually the spec says "solid circle (dot) if animate=false")
+    if (!animate) {
+      // replace text- with bg-
+      const bgColor = color.replace("text-", "bg-");
+      return (
+        <div className={cn("w-2 h-2 rounded-full shrink-0", bgColor, className)} />
+      );
+    }
+
+    // 20px ring
+    return (
+      <div className={cn("relative inline-flex items-center justify-center shrink-0 w-5 h-5", color, className)}>
+        <svg width="20" height="20" viewBox="0 0 20 20" className="transform -rotate-90">
+          <circle cx="10" cy="10" r="8" className="fill-none stroke-current opacity-20" strokeWidth="2.5" />
+          <motion.circle 
+            cx="10" cy="10" r="8" 
+            className="fill-none stroke-current" 
+            strokeWidth="2.5" 
+            strokeDasharray={8 * 2 * Math.PI}
+            initial={{ strokeDashoffset: 8 * 2 * Math.PI }}
+            animate={{ strokeDashoffset: state === "resolved" ? 0 : (8 * 2 * Math.PI) * 0.25 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
+        </svg>
+        {pulse && (
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-current"
+            initial={{ opacity: 0.5, scale: 1 }}
+            animate={{ opacity: 0, scale: 1.5 }}
+            transition={{ duration: state === "overdue" ? 1 : 2, repeat: Infinity, ease: "easeOut" }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Large 160px ring for the detail panel
+  const totalWindowMs = (SLA_HOURS[priority] || 24) * 3600000;
+  const elapsedMs = now.getTime() - new Date(createdAt).getTime();
+  const rawRatio = elapsedMs / totalWindowMs;
+  const ratio = Math.max(0, Math.min(1, rawRatio)); // clamp 0-1
+  
+  const radius = 76;
   const circumference = radius * 2 * Math.PI;
+  // If resolved, we can just show a full ring
+  const offset = state === "resolved" ? 0 : circumference * (1 - ratio);
 
   return (
-    <div className={cn("relative inline-flex items-center justify-center", className)}>
-      <svg
-        width={svgSize}
-        height={svgSize}
-        viewBox={`0 0 ${svgSize} ${svgSize}`}
-        className="transform -rotate-90"
-      >
-        <circle
-          cx={svgSize / 2}
-          cy={svgSize / 2}
-          r={radius}
-          className={cn("fill-none", bgColor)}
-          strokeWidth={strokeWidth}
-          stroke="currentColor"
-        />
+    <div className={cn("relative inline-flex items-center justify-center shrink-0 w-[160px] h-[160px]", color, className)}>
+      <svg width="160" height="160" viewBox="0 0 160 160" className="transform -rotate-90">
+        <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-20" strokeWidth="6" />
+        
+        {state === "on_track" && (
+           <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-[0.15]" strokeWidth="12" filter="blur(6px)" />
+        )}
+        
         <motion.circle
-          cx={svgSize / 2}
-          cy={svgSize / 2}
-          r={radius}
-          className={cn("fill-none", color)}
-          strokeWidth={strokeWidth}
-          stroke="currentColor"
+          cx="80" cy="80" r={radius}
+          className="fill-none stroke-current"
+          strokeWidth="6"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
-          animate={{
-            strokeDashoffset: state === "resolved" ? 0 : circumference * 0.25,
-          }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          style={{ filter: "drop-shadow(0 0 6px currentColor)" }}
         />
       </svg>
-      
-      {pulse && state !== "resolved" && (
-        <motion.div
-          className={cn("absolute inset-0 rounded-full border-2", color)}
-          initial={{ opacity: 0.5, scale: 1 }}
-          animate={{ opacity: 0, scale: 1.5 }}
-          transition={{
-            duration: state === "overdue" ? 1 : 2,
-            repeat: Infinity,
-            ease: "easeOut",
-          }}
-        />
-      )}
-
-      <div className={cn("absolute flex items-center justify-center", color)}>
-        <Icon
-          size={size === "sm" ? 12 : size === "md" ? 16 : 20}
-          strokeWidth={2.5}
-        />
-      </div>
     </div>
   );
 }

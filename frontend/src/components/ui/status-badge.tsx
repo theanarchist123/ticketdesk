@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Circle, PlayCircle, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function StatusBadge({ status }: { status: "Open" | "In Progress" | "Closed" | string }) {
+export function StatusBadge({ status, className }: { status: "Open" | "In Progress" | "Closed" | string, className?: string }) {
   if (status === "Open") {
     return (
-      <Badge variant="outline" className="text-sky-400 border-sky-400/20 bg-sky-400/10 gap-1.5">
+      <Badge variant="outline" className={cn("text-[var(--td-status-open)] border-[var(--td-status-open)]/20 bg-[var(--td-status-open)]/10 gap-1.5 font-normal rounded-full", className)}>
         <Circle className="w-3.5 h-3.5" />
         Open
       </Badge>
@@ -12,14 +13,14 @@ export function StatusBadge({ status }: { status: "Open" | "In Progress" | "Clos
   }
   if (status === "In Progress") {
     return (
-      <Badge variant="outline" className="text-amber-400 border-amber-400/20 bg-amber-400/10 gap-1.5">
+      <Badge variant="outline" className={cn("text-[var(--td-status-in-progress)] border-[var(--td-status-in-progress)]/20 bg-[var(--td-status-in-progress)]/10 gap-1.5 font-normal rounded-full", className)}>
         <PlayCircle className="w-3.5 h-3.5" />
         In progress
       </Badge>
     );
   }
   return (
-    <Badge variant="outline" className="text-emerald-400 border-emerald-400/20 bg-emerald-400/10 gap-1.5">
+    <Badge variant="outline" className={cn("text-[var(--td-status-closed)] border-[var(--td-status-closed)]/20 bg-[var(--td-status-closed)]/10 gap-1.5 font-normal rounded-full", className)}>
       <CheckCircle2 className="w-3.5 h-3.5" />
       Closed
     </Badge>

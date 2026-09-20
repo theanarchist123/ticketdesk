@@ -2,7 +2,7 @@ import type { SLAState } from "./types";
 
 export const SLA_HOURS: Record<string, number> = {
   Urgent: 4,
-  High: 12,
+  High: 8,
   Medium: 24,
   Low: 48,
 };
