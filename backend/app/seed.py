@@ -30,15 +30,15 @@ def seed_demo_data(force_reset=False):
         # resolved_offset_hours is hours after creation when it was resolved (for closed tickets)
         
         raw = [
-            # 3 Overdue (Urgent, High, Medium) - worst about 6 hours over
-            ("Aarav Kumar", "aarav@mail.com", "Refund not received after 10 days", "Urgent", "Open", 10, None), # 10h ago. SLA 4h. 6h overdue
-            ("Sara Mitchell", "sara.m@inbox.com", "Can't reset my password", "High", "In Progress", 14, None), # 14h ago. SLA 8h. 6h overdue
-            ("Rohan Joshi", "rohan.j@company.co", "Invoice PDF is blank", "Medium", "Open", 30, None), # 30h ago. SLA 24h. 6h overdue
+            # 3 Overdue (Urgent, High, Medium) - varied times
+            ("Aarav Kumar", "aarav@mail.com", "Refund not received after 10 days", "Urgent", "Open", 10.1, None), # SLA 4h. ~6h overdue
+            ("Sara Mitchell", "sara.m@inbox.com", "Can't reset my password", "High", "In Progress", 10.5, None), # SLA 8h. ~2h 30m overdue
+            ("Rohan Joshi", "rohan.j@company.co", "Invoice PDF is blank", "Medium", "Open", 24.66, None), # SLA 24h. ~40m overdue
             
             # 3 At risk (Under 25% left)
-            ("Carlos Rivera", "carlos@webshop.mx", "Shipping tracking not updating", "Urgent", "Open", 3.5, None), # SLA 4h. 0.5h left (12%)
-            ("Emily Chen", "emily.chen@designlab.com", "Coupon code not applying", "High", "In Progress", 6.5, None), # SLA 8h. 1.5h left (18%)
-            ("David Park", "david.park@freelance.net", "API rate limit too low", "Low", "Open", 38, None), # SLA 48h. 10h left (20%)
+            ("Carlos Rivera", "carlos@webshop.mx", "Shipping tracking not updating", "Urgent", "Open", 3.2, None), # SLA 4h. 0.8h left
+            ("Emily Chen", "emily.chen@designlab.com", "Coupon code not applying", "High", "In Progress", 7.0, None), # SLA 8h. 1h left
+            ("David Park", "david.park@freelance.net", "API rate limit too low", "Low", "Open", 46.0, None), # SLA 48h. 2h left
             
             # 12 On track (Mix of Open/In Progress, all priorities)
             ("Fatima Al-Hassan", "fatima@enterprise.ae", "Custom domain not resolving", "Medium", "Open", 4, None),

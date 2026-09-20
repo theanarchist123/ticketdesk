@@ -12,8 +12,8 @@ import { motion } from "motion/react";
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useStats();
   const { data: recentTickets, isLoading: ticketsLoading } = useTickets({
-    limit: 5,
-    status: "Open", // show only open tickets on dashboard summary
+    limit: 6,
+    status: "Open,In Progress", 
   });
   const now = useNow();
 
@@ -86,11 +86,11 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Recent Open Tickets */}
+        {/* Needs attention */}
         <Card className="col-span-1 border shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Recent Open Tickets</CardTitle>
+              <CardTitle>Needs attention</CardTitle>
               <p className="text-sm text-muted-foreground mt-1">Tickets needing your attention.</p>
             </div>
             <Link to="/tickets" className="text-sm font-medium text-primary hover:underline">
@@ -106,7 +106,7 @@ export default function DashboardPage() {
               </div>
             ) : !recentTickets?.data?.length ? (
               <div className="text-center p-8 text-muted-foreground border border-dashed rounded-lg">
-                No open tickets right now. Great job!
+                No tickets need attention right now. Great job!
               </div>
             ) : (
               <div className="space-y-4">
@@ -131,13 +131,28 @@ export default function DashboardPage() {
                           {ticket.subject}
                         </p>
                         <p className="text-xs text-muted-foreground truncate mt-0.5">
-                          {formatTimeLeft(ticket.due_at, now, ticket.status)} • {ticket.customer_name}
+                          {ticket.customer_name}
                         </p>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                      <div className="shrink-0 flex items-center gap-3">
+                        <div className="text-right">
+                           <span className={`text-xs font-medium whitespace-nowrap ${
+                            formatTimeLeft(ticket.due_at, now, ticket.status).includes("overdue") 
+                              ? "text-rose-500" 
+                              : "text-muted-foreground"
+                           }`}>
+                            {formatTimeLeft(ticket.due_at, now, ticket.status)}
+                           </span>
+                        </div>
+                        <div className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          ticket.status === 'Open' ? 'bg-blue-500/10 text-blue-500' :
+                          'bg-amber-500/10 text-amber-600'
+                        }`}>
+                          {ticket.status}
+                        </div>
+                        <div className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                           ticket.priority === 'Urgent' ? 'bg-rose-500/10 text-rose-500' :
-                          ticket.priority === 'High' ? 'bg-amber-500/10 text-amber-500' :
+                          ticket.priority === 'High' ? 'bg-orange-500/10 text-orange-500' :
                           'bg-secondary text-secondary-foreground'
                         }`}>
                           {ticket.priority}

@@ -74,7 +74,8 @@ def list_tickets(
 
     # ── Filters ───────────────────────────────────────────────────────────
     if status:
-        query = query.filter(Ticket.status == status)
+        status_list = [s.strip() for s in status.split(",")]
+        query = query.filter(Ticket.status.in_(status_list))
 
     if priority:
         query = query.filter(Ticket.priority == priority)

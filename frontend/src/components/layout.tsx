@@ -11,8 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { formatTimeLeft } from "@/lib/format";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/" },
@@ -28,6 +27,7 @@ export function Layout({ children }: { children: ReactNode }) {
   // Request overdue tickets (sla param will be supported in Phase 2)
   const { data: overdueTickets } = useTickets({ limit: 5, sla: "overdue" } as any);
   const overdueCount = stats?.overdue || 0;
+  const now = new Date();
 
   return (
     <div className="flex min-h-screen bg-background text-foreground selection:bg-primary/20">
@@ -109,7 +109,7 @@ export function Layout({ children }: { children: ReactNode }) {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel className="flex justify-between items-center">
-                  Overdue Tickets
+                  Overdue tickets
                   {overdueCount > 0 && (
                     <span className="bg-rose-500/10 text-rose-500 text-xs px-2 py-0.5 rounded-full">
                       {overdueCount}
@@ -127,7 +127,12 @@ export function Layout({ children }: { children: ReactNode }) {
                       <DropdownMenuItem key={ticket.ticket_id} asChild>
                         <Link to={`/tickets/${ticket.ticket_id}`} className="flex flex-col items-start gap-1 p-3 cursor-pointer">
                           <span className="text-sm font-medium leading-none">{ticket.subject}</span>
-                          <span className="text-xs text-muted-foreground truncate w-full">{ticket.ticket_id} • {ticket.customer_name}</span>
+                          <div className="flex items-center justify-between w-full">
+                            <span className="text-xs text-muted-foreground truncate w-full">{ticket.ticket_id} • {ticket.customer_name}</span>
+                            <span className="text-xs font-medium text-rose-500 whitespace-nowrap ml-2">
+                              {formatTimeLeft(ticket.due_at, now, ticket.status)}
+                            </span>
+                          </div>
                         </Link>
                       </DropdownMenuItem>
                     ))}
