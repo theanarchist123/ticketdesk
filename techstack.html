@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TicketDesk — Tech Stack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Instrument Sans', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 32px;
+      overflow: hidden;
+    }
+
+    /* Animated dot grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(124,124,255,0.07) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+    }
+
+    /* Glowing background blob */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(124,124,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #7c7cff;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    h1 .gradient {
+      background: linear-gradient(135deg, #7c7cff 0%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sub {
+      color: #7d8590;
+      font-size: 15px;
+      margin-bottom: 56px;
+    }
+
+    /* ── Icon row ── */
+    .stack-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 36px 28px;
+    }
+
+    .tech {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      cursor: default;
+      transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .tech:hover {
+      transform: translateY(-14px);
+    }
+
+    .tech:hover .icon-wrap img {
+      filter: drop-shadow(0 0 16px var(--glow));
+    }
+
+    .icon-wrap {
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-wrap img {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      transition: filter 0.28s ease;
+    }
+
+    .tech-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #7d8590;
+      transition: color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tech:hover .tech-label {
+      color: #e6edf3;
+    }
+
+    /* Divider */
+    .divider {
+      width: 1px;
+      height: 52px;
+      background: linear-gradient(to bottom, transparent, #21293a, transparent);
+      align-self: center;
+      margin: 0 4px;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 56px;
+      color: #7d8590;
+      font-size: 13px;
+    }
+
+    .footer a {
+      color: #7c7cff;
+      text-decoration: none;
+    }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <p class="eyebrow">⚡ Full Stack Project</p>
+    <h1>Built with <span class="gradient">Modern Tools</span></h1>
+    <p class="sub">The complete tech stack powering TicketDesk — from database to deployment.</p>
+
+    <div class="stack-row">
+
+      <!-- Python -->
+      <div class="tech" style="--glow: rgba(255,212,59,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" />
+        </div>
+        <span class="tech-label">Python</span>
+      </div>
+
+      <!-- FastAPI -->
+      <div class="tech" style="--glow: rgba(0,210,130,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/fastapi/fastapi-original.svg" alt="FastAPI" />
+        </div>
+        <span class="tech-label">FastAPI</span>
+      </div>
+
+      <!-- SQLAlchemy -->
+      <div class="tech" style="--glow: rgba(180,0,0,0.45)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sqlalchemy/sqlalchemy-original.svg" alt="SQLAlchemy" />
+        </div>
+        <span class="tech-label">SQLAlchemy</span>
+      </div>
+
+      <!-- PostgreSQL -->
+      <div class="tech" style="--glow: rgba(51,103,145,0.6)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg" alt="PostgreSQL" />
+        </div>
+        <span class="tech-label">PostgreSQL</span>
+      </div>
+
+      <!-- pytest -->
+      <div class="tech" style="--glow: rgba(0,150,255,0.4)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/pytest/pytest-original.svg" alt="pytest" />
+        </div>
+        <span class="tech-label">pytest</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- React -->
+      <div class="tech" style="--glow: rgba(97,218,251,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" />
+        </div>
+        <span class="tech-label">React 19</span>
+      </div>
+
+      <!-- TypeScript -->
+      <div class="tech" style="--glow: rgba(49,120,198,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" />
+        </div>
+        <span class="tech-label">TypeScript</span>
+      </div>
+
+      <!-- Vite -->
+      <div class="tech" style="--glow: rgba(189,52,254,0.4)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vitejs/vitejs-original.svg" alt="Vite" />
+        </div>
+        <span class="tech-label">Vite</span>
+      </div>
+
+      <!-- Tailwind -->
+      <div class="tech" style="--glow: rgba(56,189,248,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/tailwindcss/tailwindcss-original.svg" alt="Tailwind CSS" />
+        </div>
+        <span class="tech-label">Tailwind v4</span>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Docker -->
+      <div class="tech" style="--glow: rgba(30,150,243,0.5)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg" alt="Docker" />
+        </div>
+        <span class="tech-label">Docker</span>
+      </div>
+
+      <!-- GitHub -->
+      <div class="tech" style="--glow: rgba(255,255,255,0.2)">
+        <div class="icon-wrap">
+          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/github/github-original.svg" alt="GitHub" style="filter: invert(1);" />
+        </div>
+        <span class="tech-label">GitHub</span>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      Live at &nbsp;<a href="https://ticketdesk-92r3.onrender.com/" target="_blank">ticketdesk-92r3.onrender.com</a>
+      &nbsp;·&nbsp;
+      <a href="https://github.com/theanarchist123/ticketdesk" target="_blank">GitHub →</a>
+    </div>
+
+  </div>
+</body>
+</html>
