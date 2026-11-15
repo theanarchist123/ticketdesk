@@ -7,7 +7,7 @@ import { AreaChart, BarChart, ChartCard, Donut, HBars, Heatmap, StatTile } from 
 import { ageBuckets, avgOpenAgeHours, delta, fmtHours, heatmap, perDay, slaMix, sum, topCustomers, WEEKDAYS } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-const RANGES = [7, 14, 30] as const;
+const RANGES = [7, 14, 30, 90] as const;
 const PRIORITIES = [
   { key: "Urgent", color: "var(--td-urgent)" },
   { key: "High", color: "var(--td-high)" },

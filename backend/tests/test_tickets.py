@@ -114,6 +114,14 @@ class TestCreateTicket:
         payload.update(overrides)
         return client.post("/api/tickets", json=payload)
 
+    def test_name_rejects_digits_and_symbols(self):
+        for bad in ["John123", "J0hn Doe", "Jane@Doe", "12345", "-Bob"]:
+            assert self._create(customer_name=bad).status_code == 422, bad
+
+    def test_name_accepts_real_names(self):
+        for good in ["Kevin O'Connor", "Fatima Al-Hassan", "José Álvarez", "Dr. Mei Lin"]:
+            assert self._create(customer_name=good).status_code == 201, good
+
     def test_create_returns_201(self):
         resp = self._create()
         assert resp.status_code == 201
@@ -155,7 +163,7 @@ class TestListTickets:
     def _seed(self, n=3):
         for i in range(n):
             client.post("/api/tickets", json={
-                "customer_name": f"User {i}",
+                "customer_name": f"User {chr(65 + i)}",
                 "customer_email": f"user{i}@test.com",
                 "subject": f"Issue number {i}",
                 "description": f"Detailed description for issue number {i} with enough chars.",
@@ -179,7 +187,7 @@ class TestListTickets:
 
     def test_search_by_name(self):
         self._seed(3)
-        resp = client.get("/api/tickets?search=User 0")
+        resp = client.get("/api/tickets?search=User A")
         assert len(resp.json()) >= 1
 
     def test_search_by_ticket_id(self):
@@ -200,7 +208,7 @@ class TestListTickets:
 
     def test_search_case_insensitive(self):
         self._seed(3)
-        resp = client.get("/api/tickets?search=USER 0")
+        resp = client.get("/api/tickets?search=USER A")
         assert len(resp.json()) >= 1
 
     def test_search_escapes_wildcards(self):
@@ -363,7 +371,7 @@ class TestStats:
     def test_stats_with_tickets(self):
         for i in range(3):
             client.post("/api/tickets", json={
-                "customer_name": f"Stats User {i}",
+                "customer_name": f"Stats User {chr(65 + i)}",
                 "customer_email": f"stats{i}@test.com",
                 "subject": f"Stats issue {i}",
                 "description": f"Description for stats test number {i} with enough length.",

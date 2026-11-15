@@ -57,7 +57,11 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
-        {children}
+        {/* cmdk's input/list/items must live inside <Command>, otherwise it throws on open.
+            shouldFilter=false: results come from the server search, so cmdk must not re-filter them. */}
+        <Command shouldFilter={false} loop>
+          {children}
+        </Command>
       </DialogContent>
     </Dialog>
   )

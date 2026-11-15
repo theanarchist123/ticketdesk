@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useTickets } from "@/hooks/useTickets";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   CommandDialog,
   CommandEmpty,
@@ -17,12 +18,22 @@ export function CommandPalette({ open, setOpen }: { open: boolean, setOpen: Reac
   const navigate = useNavigate();
 
   // Fetch recent tickets if search is empty, otherwise fetch search results
-  const { data: ticketsData, isLoading } = useTickets({
-    search: search || undefined,
-    limit: 5,
+  const debounced = useDebounce(search.trim(), 250);
+  const { data: ticketsData, isFetching } = useTickets({
+    search: debounced || undefined,
+    limit: 6,
   });
-
   const tickets = ticketsData?.data || [];
+  const isLoading = isFetching || debounced !== search.trim();
+
+  // Page shortcuts, filtered locally by what's typed
+  const pages = [
+    { label: "Overview", href: "/" }, { label: "Tickets", href: "/tickets" }, { label: "Board", href: "/board" },
+    { label: "Customers", href: "/customers" }, { label: "Reports", href: "/reports" }, { label: "SLA policies", href: "/sla" },
+  ].filter((p) => !search.trim() || p.label.toLowerCase().includes(search.trim().toLowerCase()));
+
+  // Reset the box each time the palette closes
+  useEffect(() => { if (!open) setSearch(""); }, [open]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -60,8 +71,19 @@ export function CommandPalette({ open, setOpen }: { open: boolean, setOpen: Reac
         onValueChange={setSearch}
       />
       <CommandList>
-        <CommandEmpty>{isLoading ? "Searching..." : "No results found."}</CommandEmpty>
-        
+        {!isLoading && !tickets.length && !pages.length && <CommandEmpty>No results for “{search}”.</CommandEmpty>}
+        {isLoading && search && !tickets.length && <div className="py-6 text-center text-sm text-muted-foreground">Searching…</div>}
+
+        {pages.length > 0 && (
+          <CommandGroup heading="Go to">
+            {pages.map((p) => (
+              <CommandItem key={p.href} value={p.href} onSelect={() => runCommand(() => navigate(p.href))}>
+                <ArrowRight className="mr-2 h-4 w-4" /><span>{p.label}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
         {!search && (
           <CommandGroup heading="Actions">
             <CommandItem onSelect={() => runCommand(() => navigate("/tickets/new"))}>

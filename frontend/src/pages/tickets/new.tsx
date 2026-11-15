@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowLeft, Ticket as TicketIcon } from "lucide-react";
+import { Loader2, ArrowLeft, Ticket as TicketIcon, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/ui/avatar";
@@ -19,11 +19,27 @@ import { PriorityMark } from "@/components/ui/priority-mark";
 import { SlaRing } from "@/components/ui/sla-ring";
 import { SLA_HOURS } from "@/lib/sla";
 
+// Letters from any language, plus spaces, dots, hyphens and apostrophes (e.g. "Mary-Jane O'Neil Jr.")
+const NAME_RE = /^\p{L}[\p{L}\p{M}\s.'’-]*$/u;
+const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+
 const schema = z.object({
-  customer_name: z.string().min(2, "Name must be at least 2 characters."),
-  customer_email: z.string().email("Please enter a valid email address."),
-  subject: z.string().min(5, "Subject must be at least 5 characters.").max(100, "Subject is too long."),
-  description: z.string().min(10, "Please provide more details (at least 10 chars)."),
+  customer_name: z.string().trim()
+    .min(1, "Customer name is required.")
+    .min(2, "Name must be at least 2 characters.")
+    .max(60, "Name is too long (60 characters max).")
+    .regex(NAME_RE, "Name can only contain letters, spaces, hyphens and apostrophes — no numbers or symbols."),
+  customer_email: z.string().trim()
+    .min(1, "Email is required.")
+    .regex(EMAIL_RE, "Enter a valid email, like name@company.com."),
+  subject: z.string().trim()
+    .min(1, "Subject is required.")
+    .min(5, "Subject must be at least 5 characters.")
+    .max(100, "Subject is too long (100 characters max)."),
+  description: z.string().trim()
+    .min(1, "Description is required.")
+    .min(10, "Please add a bit more detail (at least 10 characters).")
+    .max(2000, "Description is too long (2000 characters max)."),
   priority: z.enum(["Low", "Medium", "High", "Urgent"]),
 });
 
@@ -40,9 +56,11 @@ export default function NewTicketPage() {
     handleSubmit,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, touchedFields, dirtyFields },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: "all", // validate on every change AND on blur, so leaving a field empty flags it immediately
+    criteriaMode: "firstError",
     defaultValues: {
       priority: "Medium",
     },
@@ -50,6 +68,16 @@ export default function NewTicketPage() {
 
   const formValues = watch();
   const subjectLength = formValues.subject?.length || 0;
+
+  // Inline feedback for one field: red message when invalid, green tick when valid.
+  const FieldStatus = ({ name }: { name: keyof FormValues }) => {
+    const err = errors[name];
+    if (err) return <p role="alert" className="flex items-start gap-1.5 text-[13px] font-medium text-[var(--td-urgent)]"><AlertCircle className="mt-0.5 size-3.5 shrink-0" />{err.message}</p>;
+    if (dirtyFields[name] || touchedFields[name]) return <p className="flex items-center gap-1.5 text-[13px] text-[var(--td-status-closed)]"><CheckCircle2 className="size-3.5" />Looks good</p>;
+    return null;
+  };
+  const fieldCls = (name: keyof FormValues) =>
+    `bg-[var(--td-bg)] transition-colors ${errors[name] ? "border-[var(--td-urgent)] focus-visible:ring-[var(--td-urgent)]/40" : dirtyFields[name] ? "border-[var(--td-status-closed)]/60" : "border-[var(--td-border)]"}`;
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -77,7 +105,7 @@ export default function NewTicketPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} noValidate>
             <Card className="bg-[var(--td-surface)] border-[var(--td-border)]">
               <CardHeader>
                 <CardTitle>Ticket details</CardTitle>
@@ -91,13 +119,12 @@ export default function NewTicketPage() {
                     <Input 
                       id="customer_name" 
                       placeholder="Jane Doe" 
-                      className="bg-[var(--td-bg)] border-[var(--td-border)]"
-                      {...register("customer_name")} 
+                      className={fieldCls("customer_name")}
+                      autoComplete="off"
+                      {...register("customer_name")}
                       aria-invalid={!!errors.customer_name}
                     />
-                    {errors.customer_name && (
-                      <p className="text-sm text-rose-500 font-medium">{errors.customer_name.message}</p>
-                    )}
+                    <FieldStatus name="customer_name" />
                   </div>
                   
                   <div className="space-y-2">
@@ -106,13 +133,11 @@ export default function NewTicketPage() {
                       id="customer_email" 
                       type="email"
                       placeholder="jane@example.com" 
-                      className="bg-[var(--td-bg)] border-[var(--td-border)]"
-                      {...register("customer_email")} 
+                      className={fieldCls("customer_email")}
+                      {...register("customer_email")}
                       aria-invalid={!!errors.customer_email}
                     />
-                    {errors.customer_email && (
-                      <p className="text-sm text-rose-500 font-medium">{errors.customer_email.message}</p>
-                    )}
+                    <FieldStatus name="customer_email" />
                   </div>
                 </div>
 
@@ -126,13 +151,11 @@ export default function NewTicketPage() {
                   <Input 
                     id="subject" 
                     placeholder="Brief summary of the issue..." 
-                    className="bg-[var(--td-bg)] border-[var(--td-border)]"
-                    {...register("subject")} 
+                    className={fieldCls("subject")}
+                    {...register("subject")}
                     aria-invalid={!!errors.subject}
                   />
-                  {errors.subject && (
-                    <p className="text-sm text-rose-500 font-medium">{errors.subject.message}</p>
-                  )}
+                  <FieldStatus name="subject" />
                 </div>
 
                 <div className="space-y-2">
@@ -140,13 +163,11 @@ export default function NewTicketPage() {
                   <Textarea 
                     id="description" 
                     placeholder="Detailed explanation of the issue, steps to reproduce, or any relevant context..." 
-                    className="min-h-[120px] bg-[var(--td-bg)] border-[var(--td-border)]"
-                    {...register("description")} 
+                    className={`min-h-[120px] ${fieldCls("description")}`}
+                    {...register("description")}
                     aria-invalid={!!errors.description}
                   />
-                  {errors.description && (
-                    <p className="text-sm text-rose-500 font-medium">{errors.description.message}</p>
-                  )}
+                  <FieldStatus name="description" />
                 </div>
 
                 <div className="space-y-2">
@@ -250,6 +271,10 @@ export default function NewTicketPage() {
                 <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-[var(--td-text)] opacity-80">
                   {formValues.description || "The ticket description will be displayed here..."}
                 </div>
+              </div>
+              <div className="flex items-center justify-between border-t border-[var(--td-border)] bg-[var(--td-raised)]/40 px-6 py-3 text-xs text-[var(--td-muted)]">
+                <span>Response target</span>
+                <span className="font-medium text-[var(--td-text)]">{formValues.priority || "Medium"} · within {SLA_HOURS[formValues.priority || "Medium"]} hours</span>
               </div>
             </div>
           </div>

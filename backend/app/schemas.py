@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 # ── Request schemas ───────────────────────────────────────────────────────────
@@ -14,6 +14,15 @@ class TicketCreate(BaseModel):
     subject: str = Field(..., min_length=3, max_length=120)
     description: str = Field(..., min_length=10, max_length=4000)
     priority: Literal["Low", "Medium", "High", "Urgent"] = "Medium"
+
+    @field_validator("customer_name")
+    @classmethod
+    def name_has_only_letters(cls, v: str) -> str:
+        """Same rule as the frontend form: letters (any language), spaces, . ' ’ -"""
+        v = v.strip()
+        if len(v) < 2 or not v[0].isalpha() or not all(c.isalpha() or c in " .'’-" for c in v):
+            raise ValueError("Name may only contain letters, spaces, hyphens and apostrophes")
+        return v
 
 
 class NoteCreate(BaseModel):

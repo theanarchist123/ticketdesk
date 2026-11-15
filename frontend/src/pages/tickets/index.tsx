@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Sparkline } from "@/components/charts";
 import { avgOpenAgeHours, fmtHours, perDay } from "@/lib/analytics";
@@ -18,7 +18,10 @@ export default function TicketsPage() {
   const now = useNow(60000);
   
   const statusFilter = searchParams.get("status") || "all";
-  const searchInput = searchParams.get("search") || "";
+  const urlSearch = searchParams.get("search") || "";
+  // The box owns its own text. Reading it back from the URL on every keystroke dropped
+  // characters (URL updates are async), so the URL is only synced after typing pauses.
+  const [searchInput, setSearchInput] = useState(urlSearch);
   const priorityFilter = searchParams.get("priority") || "all";
   const sortFilter = searchParams.get("sort") || "priority_sla";
   const slaFilter = searchParams.get("sla") || "all";
@@ -28,6 +31,22 @@ export default function TicketsPage() {
   const offset = 0; // Always start at 0, limit expands
 
   const debouncedSearch = useDebounce(searchInput, 300);
+
+  // typing -> URL (debounced, replaces history so Back isn't flooded)
+  useEffect(() => {
+    if (debouncedSearch === urlSearch) return;
+    const next = new URLSearchParams(searchParams);
+    if (debouncedSearch) next.set("search", debouncedSearch); else next.delete("search");
+    next.delete("limit");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // URL -> box, only for changes that didn't come from typing (sidebar views, Clear filters, Back)
+  useEffect(() => {
+    if (urlSearch !== debouncedSearch && urlSearch !== searchInput) setSearchInput(urlSearch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSearch]);
 
   const { data: stats } = useStats();
   const { data, isLoading, isError, dataUpdatedAt } = useTickets({
@@ -64,7 +83,7 @@ export default function TicketsPage() {
   };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateParams({ search: e.target.value || null });
+    setSearchInput(e.target.value);
   };
 
   const handleLoadMore = () => {
@@ -82,7 +101,7 @@ export default function TicketsPage() {
             <h1 className="font-display text-2xl font-semibold">Tickets</h1>
             <p className="mt-1 text-sm text-muted-foreground">{total} {filtersOn ? "matching" : "total"} · updated {dataUpdatedAt ? formatTimeAgo(new Date(dataUpdatedAt).toISOString()) : "just now"}</p>
           </div>
-          {filtersOn && <button onClick={() => setSearchParams(new URLSearchParams())} className="text-xs font-medium text-primary hover:underline">Clear filters</button>}
+          {filtersOn && <button onClick={() => { setSearchInput(""); setSearchParams(new URLSearchParams()); }} className="text-xs font-medium text-primary hover:underline">Clear filters</button>}
         </div>
 
         {slaFilter !== "all" && (
@@ -127,7 +146,7 @@ export default function TicketsPage() {
           ) : isError ? (
             <div className="flex flex-col items-center gap-2 px-6 py-16 text-center"><AlertCircle className="size-8 text-[var(--td-urgent)]" /><p className="font-semibold">Couldn't load tickets</p><p className="text-sm text-muted-foreground">There was a problem reaching the server.</p></div>
           ) : tickets.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 px-6 py-16 text-center"><TicketIcon className="size-8 text-muted-foreground/50" /><p className="font-semibold">No tickets found</p><p className="max-w-sm text-sm text-muted-foreground">Nothing matches the current filters.</p>{filtersOn && <Button variant="outline" className="mt-2" onClick={() => setSearchParams(new URLSearchParams())}>Clear filters</Button>}</div>
+            <div className="flex flex-col items-center gap-2 px-6 py-16 text-center"><TicketIcon className="size-8 text-muted-foreground/50" /><p className="font-semibold">No tickets found</p><p className="max-w-sm text-sm text-muted-foreground">Nothing matches the current filters.</p>{filtersOn && <Button variant="outline" className="mt-2" onClick={() => { setSearchInput(""); setSearchParams(new URLSearchParams()); }}>Clear filters</Button>}</div>
           ) : (
             <div className="divide-y divide-border">{tickets.map((t, idx) => <TicketRow key={t.ticket_id} ticket={t} now={now} index={idx} />)}</div>
           )}
