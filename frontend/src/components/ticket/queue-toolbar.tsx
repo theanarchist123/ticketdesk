@@ -1,8 +1,6 @@
-import { Search, SlidersHorizontal } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Search, X } from "lucide-react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Stats } from "@/lib/types";
 
 export interface QueueToolbarProps {
@@ -17,104 +15,50 @@ export interface QueueToolbarProps {
   stats?: Stats;
 }
 
-export function QueueToolbar({ 
-  searchInput, 
-  onSearchChange, 
-  statusFilter, 
-  onStatusChange,
-  priorityFilter,
-  onPriorityChange,
-  sortFilter,
-  onSortChange,
-  stats
-}: QueueToolbarProps) {
-  
+const selectCls = "h-9 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground outline-none focus:border-primary";
+
+export function QueueToolbar({ searchInput, onSearchChange, statusFilter, onStatusChange, priorityFilter, onPriorityChange, sortFilter, onSortChange, stats }: QueueToolbarProps) {
   const TABS = [
-    { id: "all", label: "All tickets", count: stats?.all },
+    { id: "all", label: "All", count: stats?.all },
     { id: "Open", label: "Open", count: stats?.open },
     { id: "In Progress", label: "In progress", count: stats?.in_progress },
     { id: "Closed", label: "Closed", count: stats?.closed },
   ];
-
   return (
-    <div className="flex flex-col gap-4">
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-[var(--td-surface)] border border-[var(--td-border)] rounded-lg relative w-full overflow-x-auto shadow-sm">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="flex w-full gap-1 overflow-x-auto rounded-xl border border-border bg-card p-1 shadow-[inset_0_2px_6px_oklch(0_0_0/0.3)] lg:w-auto">
         {TABS.map((tab) => {
-          const isActive = statusFilter === tab.id;
+          const active = statusFilter === tab.id;
           return (
-            <button
-              key={tab.id}
-              onClick={() => onStatusChange(tab.id)}
-              className={cn(
-                "relative z-10 px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-md flex items-center gap-2",
-                isActive ? "text-[var(--td-text)]" : "text-[var(--td-muted)] hover:text-[var(--td-text)]"
-              )}
-            >
-              <span>{tab.label}</span>
-              {tab.count !== undefined && (
-                <span className={cn(
-                  "text-xs font-mono px-1.5 py-0.5 rounded-full bg-[var(--td-bg)] border border-[var(--td-border)]",
-                  isActive ? "text-[var(--td-text)]" : "text-[var(--td-muted)]"
-                )}>
-                  {tab.count}
-                </span>
-              )}
-              {isActive && (
-                <motion.div
+            <button key={tab.id} onClick={() => onStatusChange(tab.id)} className={cn("relative flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-[13px] font-medium transition-all duration-200 active:scale-95", active ? "text-primary-foreground" : "text-muted-foreground hover:-translate-y-px hover:bg-white/5 hover:text-foreground")}>
+              {active && (
+                <motion.span
                   layoutId="status-tab"
-                  className="absolute inset-0 bg-[var(--td-raised)] rounded-md border border-[var(--td-border)] shadow-sm -z-10"
-                  initial={false}
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                  className="absolute inset-0 rounded-lg bg-primary shadow-[inset_0_1px_0_oklch(1_0_0/0.35),0_6px_18px_-6px_color-mix(in_oklch,var(--primary)_70%,transparent)]"
                 />
               )}
+              <span className="relative z-10">{tab.label}</span>
+              {tab.count !== undefined && <span className={cn("relative z-10 text-[11px] tabular-nums", active ? "opacity-80" : "opacity-60")}>{tab.count}</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Filters & Search Row */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-sm text-[var(--td-muted)] font-medium">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>Filter</span>
-          </div>
-          
-          <Select value={priorityFilter} onValueChange={onPriorityChange}>
-            <SelectTrigger className="w-[140px] h-9">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All priorities</SelectItem>
-              <SelectItem value="Urgent">Urgent</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="Low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={sortFilter} onValueChange={onSortChange}>
-            <SelectTrigger className="w-[160px] h-9">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="priority_sla">Most urgent first</SelectItem>
-              <SelectItem value="newest">Newest</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="relative w-full sm:w-80 shrink-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--td-muted)]" />
-          <Input
-            type="search"
-            placeholder="Search by ID, subject, email..."
-            className="pl-9 w-full bg-[var(--td-bg)] border-[var(--td-border)] focus-visible:ring-[var(--td-primary)] rounded-lg h-9"
-            value={searchInput}
-            onChange={onSearchChange}
-          />
+      <div className="flex flex-1 flex-wrap items-center gap-2 lg:justify-end">
+        <select value={priorityFilter} onChange={(e) => onPriorityChange(e.target.value)} className={selectCls} aria-label="Priority">
+          <option value="all">All priorities</option>
+          {["Urgent", "High", "Medium", "Low"].map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={sortFilter} onChange={(e) => onSortChange(e.target.value)} className={selectCls} aria-label="Sort">
+          <option value="priority_sla">Most urgent first</option>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
+        </select>
+        <div className="relative min-w-[220px] flex-1 lg:max-w-xs">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input type="text" placeholder="Search ID, name, email, text…" value={searchInput} onChange={onSearchChange} className={cn(selectCls, "w-full pl-9 pr-8 placeholder:text-muted-foreground")} />
+          {searchInput && <button onClick={() => onSearchChange({ target: { value: "" } } as any)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Clear search"><X className="size-4" /></button>}
         </div>
       </div>
     </div>

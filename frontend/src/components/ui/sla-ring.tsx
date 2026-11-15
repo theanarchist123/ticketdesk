@@ -91,18 +91,14 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
   }
 
   // Large 160px ring for the detail panel
-  const radius = 76;
+  const radius = 68;
   const circumference = radius * 2 * Math.PI;
   const offset = isFullRing ? 0 : circumference * (1 - ratio);
 
   return (
     <div className={cn("relative inline-flex items-center justify-center shrink-0 w-[160px] h-[160px]", color, className)}>
-      <svg width="160" height="160" viewBox="0 0 160 160" className="transform -rotate-90">
+      <svg width="160" height="160" viewBox="0 0 160 160" className="-rotate-90 overflow-visible">
         <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-40" strokeWidth="6" />
-        
-        {state === "on_track" && (
-           <circle cx="80" cy="80" r={radius} className="fill-none stroke-current opacity-[0.15]" strokeWidth="12" filter="blur(6px)" />
-        )}
         
         <motion.circle
           cx="80" cy="80" r={radius}
@@ -112,12 +108,13 @@ export function SlaRing({ dueAt, createdAt, status, priority, size = "sm", anima
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          style={{ filter: "drop-shadow(0 0 6px currentColor)" }}
+          strokeLinecap="round"
+          style={{ filter: "drop-shadow(0 0 5px currentColor)" }}
         />
       </svg>
       {state === "resolved" && (
         <div className="absolute inset-0 flex items-center justify-center text-current">
-          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
         </div>

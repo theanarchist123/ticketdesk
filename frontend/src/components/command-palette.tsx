@@ -8,16 +8,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { Search, TicketIcon, PlusCircle, Monitor, Moon, Sun, ArrowRight } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
+import { Search, TicketIcon, PlusCircle, ArrowRight } from "lucide-react";
 
 export function CommandPalette({ open, setOpen }: { open: boolean, setOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-  const { setTheme } = useTheme();
 
   // Fetch recent tickets if search is empty, otherwise fetch search results
   const { data: ticketsData, isLoading } = useTickets({
@@ -102,25 +99,6 @@ export function CommandPalette({ open, setOpen }: { open: boolean, setOpen: Reac
           ))}
         </CommandGroup>
 
-        {!search && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading="Theme">
-              <CommandItem onSelect={() => runCommand(() => setTheme("light"))}>
-                <Sun className="mr-2 h-4 w-4" />
-                <span>Light</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setTheme("dark"))}>
-                <Moon className="mr-2 h-4 w-4" />
-                <span>Dark</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setTheme("system"))}>
-                <Monitor className="mr-2 h-4 w-4" />
-                <span>System</span>
-              </CommandItem>
-            </CommandGroup>
-          </>
-        )}
       </CommandList>
     </CommandDialog>
   );

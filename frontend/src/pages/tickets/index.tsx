@@ -1,6 +1,8 @@
-import { Link, useSearchParams } from "react-router";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router";
+import { Sparkline } from "@/components/charts";
+import { avgOpenAgeHours, fmtHours, perDay } from "@/lib/analytics";
 
-import { AnimatePresence } from "motion/react";
 import { Layout } from "@/components/layout";
 import { useTickets, useStats } from "@/hooks/useTickets";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -38,6 +40,12 @@ export default function TicketsPage() {
     offset,
   });
 
+  const { data: everything } = useTickets({ limit: 200, sort: "newest" });
+  const insight = useMemo(() => {
+    const t = everything?.data ?? [];
+    const days = perDay(t, 14);
+    return { today: days[days.length - 1].value, spark: days.map((d) => d.value), age: avgOpenAgeHours(t, now) };
+  }, [everything, now]);
   const total = data?.total || 0;
   const tickets = data?.data || [];
   const hasMore = tickets.length < total;
@@ -65,35 +73,38 @@ export default function TicketsPage() {
     setSearchParams(next);
   };
 
+  const filtersOn = searchInput || statusFilter !== "all" || priorityFilter !== "all" || slaFilter !== "all";
   return (
     <Layout>
-      <div className="flex flex-col gap-6 max-w-[1200px] mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-5">
+        <div className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Support queue</h1>
-            <p className="text-[var(--td-muted)] mt-1 flex items-center gap-2">
-              {total} tickets &middot; Updated {dataUpdatedAt ? formatTimeAgo(new Date(dataUpdatedAt).toISOString()) : "just now"}
-            </p>
+            <h1 className="font-display text-2xl font-semibold">Tickets</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{total} {filtersOn ? "matching" : "total"} · updated {dataUpdatedAt ? formatTimeAgo(new Date(dataUpdatedAt).toISOString()) : "just now"}</p>
           </div>
-          <Button asChild className="bg-[var(--td-primary)] text-white hover:opacity-90">
-            <Link to="/tickets/new">New ticket</Link>
-          </Button>
+          {filtersOn && <button onClick={() => setSearchParams(new URLSearchParams())} className="text-xs font-medium text-primary hover:underline">Clear filters</button>}
         </div>
 
-        {stats?.overdue ? (
-          <div className="bg-[var(--td-sla-overdue)]/10 text-[var(--td-sla-overdue)] text-sm px-4 py-3 rounded-lg flex items-center justify-between border border-[var(--td-sla-overdue)]/20">
-            <div className="flex items-center gap-2 font-medium">
-              <AlertCircle className="w-4 h-4" />
-              <span>{stats.overdue} ticket{stats.overdue > 1 ? 's are' : ' is'} past their response time</span>
-            </div>
-            <button 
-              onClick={() => updateParams({ sla: "overdue", status: "all" })}
-              className="font-semibold hover:underline"
-            >
-              Show them
-            </button>
+        {slaFilter !== "all" && (
+          <div className="flex items-center justify-between rounded-xl border border-[var(--td-sla-overdue)]/30 bg-[var(--td-sla-overdue)]/10 px-4 py-2.5 text-[13px]">
+            <span className="flex items-center gap-2 font-medium text-[var(--td-sla-overdue)]"><AlertCircle className="size-4" />Showing {slaFilter === "overdue" ? "past-due" : "at-risk"} tickets only</span>
+            <button onClick={() => updateParams({ sla: null })} className="font-semibold hover:underline">Show all</button>
           </div>
-        ) : null}
+        )}
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { l: "Created today", v: insight.today, c: "var(--primary)", s: insight.spark },
+            { l: "Avg. open age", v: fmtHours(insight.age), c: "var(--td-sla-at-risk)" },
+            { l: "Past due", v: stats?.overdue ?? "—", c: "var(--td-sla-overdue)" },
+            { l: "SLA met", v: stats?.sla_met_pct !== undefined ? `${Math.round(stats.sla_met_pct)}%` : "—", c: "var(--td-status-closed)" },
+          ].map((s) => (
+            <div key={s.l} className="card-surface lift flex items-center justify-between gap-3 px-4 py-3">
+              <div><p className="eyebrow">{s.l}</p><p className="stat mt-1.5 text-2xl leading-none" style={{ color: s.c }}>{s.v}</p></div>
+              {s.s && <div className="w-20"><Sparkline data={s.s} color={s.c} height={32} /></div>}
+            </div>
+          ))}
+        </div>
 
         <QueueToolbar
           searchInput={searchInput}
@@ -107,60 +118,24 @@ export default function TicketsPage() {
           stats={stats}
         />
 
-        {/* Ticket List */}
-        <div className="bg-[var(--td-surface)] border border-[var(--td-border)] rounded-xl overflow-hidden shadow-sm min-h-[400px] relative">
-          {isLoading && !tickets.length ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-muted)] gap-4 bg-[var(--td-surface)]/50 backdrop-blur-sm z-10">
-              <div className="h-8 w-8 border-2 border-[var(--td-primary)] border-t-transparent rounded-full animate-spin" />
-              <p className="font-medium animate-pulse">Loading queue...</p>
-            </div>
-          ) : isError ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-sla-overdue)] gap-4 p-8 text-center bg-[var(--td-surface)] z-10">
-              <AlertCircle className="h-10 w-10 opacity-80" />
-              <div>
-                <h3 className="font-bold text-lg">Failed to load tickets</h3>
-                <p className="opacity-80 mt-1">There was a problem communicating with the server.</p>
-              </div>
-            </div>
-          ) : tickets.length === 0 ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-[var(--td-muted)] gap-4 p-8 text-center bg-[var(--td-surface)] z-10">
-              <TicketIcon className="h-12 w-12 opacity-20" />
-              <div>
-                <h3 className="font-semibold text-lg text-[var(--td-text)]">No tickets found</h3>
-                <p className="mt-1 max-w-sm mx-auto">We couldn't find any tickets matching your current filters. Try adjusting your search or clearing the status filter.</p>
-              </div>
-              {(searchInput || statusFilter !== "all" || priorityFilter !== "all" || slaFilter !== "all") && (
-                <Button 
-                  variant="outline" 
-                  className="mt-2"
-                  onClick={() => setSearchParams(new URLSearchParams())}
-                >
-                  Clear all filters
-                </Button>
-              )}
-            </div>
-          ) : null}
-
-          <div className="divide-y divide-[var(--td-border)]">
-            <AnimatePresence mode="popLayout">
-              {tickets.map((t, idx) => (
-                <TicketRow key={t.ticket_id} ticket={t} now={now} index={idx} />
-              ))}
-            </AnimatePresence>
+        <div className="card-surface overflow-hidden">
+          <div className="hidden grid-cols-[24px_minmax(0,1fr)_150px_110px_130px] gap-x-3 border-b border-border bg-white/[0.02] px-5 py-2.5 md:grid">
+            <span /><span className="eyebrow">Ticket</span><span className="eyebrow">Customer</span><span className="eyebrow">Priority</span><span className="eyebrow text-right">Status / SLA</span>
           </div>
+          {isLoading && !tickets.length ? (
+            <div className="space-y-2 p-4">{[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-14 animate-pulse rounded-lg bg-muted" />)}</div>
+          ) : isError ? (
+            <div className="flex flex-col items-center gap-2 px-6 py-16 text-center"><AlertCircle className="size-8 text-[var(--td-urgent)]" /><p className="font-semibold">Couldn't load tickets</p><p className="text-sm text-muted-foreground">There was a problem reaching the server.</p></div>
+          ) : tickets.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 px-6 py-16 text-center"><TicketIcon className="size-8 text-muted-foreground/50" /><p className="font-semibold">No tickets found</p><p className="max-w-sm text-sm text-muted-foreground">Nothing matches the current filters.</p>{filtersOn && <Button variant="outline" className="mt-2" onClick={() => setSearchParams(new URLSearchParams())}>Clear filters</Button>}</div>
+          ) : (
+            <div className="divide-y divide-border">{tickets.map((t, idx) => <TicketRow key={t.ticket_id} ticket={t} now={now} index={idx} />)}</div>
+          )}
         </div>
 
-        {/* Pagination -> Load more */}
         {hasMore && (
-          <div className="flex justify-center mt-2">
-            <Button
-              variant="outline"
-              disabled={isLoading}
-              onClick={handleLoadMore}
-              className="w-full sm:w-auto min-w-[200px]"
-            >
-              {isLoading ? "Loading..." : `Load more (${total - tickets.length} remaining)`}
-            </Button>
+          <div className="flex justify-center">
+            <Button variant="outline" disabled={isLoading} onClick={handleLoadMore} className="h-9 min-w-[220px]">Load more ({total - tickets.length} remaining)</Button>
           </div>
         )}
       </div>

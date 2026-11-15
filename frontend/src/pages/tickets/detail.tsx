@@ -7,19 +7,18 @@ import { formatTimeAgo, formatDateTime, formatTimeLeft } from "@/lib/format";
 import { computeFrontendSlaState } from "@/lib/sla";
 import { useNow } from "@/hooks/useNow";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { ArrowLeft, Send, CheckCircle2, Circle, Clock, MessageSquare, History, User, Ticket } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { PriorityMark } from "@/components/ui/priority-mark";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Send, CheckCircle2, Clock, MessageSquare, History, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="space-y-1.5"><p className="eyebrow">{label}</p>{children}</div>;
+}
 
 export default function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,8 +30,8 @@ export default function TicketDetailPage() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
@@ -41,286 +40,151 @@ export default function TicketDetailPage() {
   if (isError || !ticket) {
     return (
       <Layout>
-        <div className="max-w-3xl mx-auto text-center py-24">
-          <h2 className="text-2xl font-bold mb-2">Ticket Not Found</h2>
-          <p className="text-muted-foreground mb-6">
-            The ticket {id} does not exist or has been removed.
-          </p>
-          <Button asChild>
-            <Link to="/tickets">Return to Queue</Link>
-          </Button>
+        <div className="mx-auto max-w-3xl py-24 text-center">
+          <h2 className="mb-2 text-2xl font-semibold">Ticket not found</h2>
+          <p className="mb-6 text-muted-foreground">The ticket {id} does not exist or has been removed.</p>
+          <Button asChild><Link to="/tickets">Back to tickets</Link></Button>
         </div>
       </Layout>
     );
   }
 
-  const currentState = computeFrontendSlaState(
-    ticket.status,
-    ticket.due_at,
-    ticket.created_at,
-    ticket.priority,
-    now
-  );
+  const currentState = computeFrontendSlaState(ticket.status, ticket.due_at, ticket.created_at, ticket.priority, now);
 
   const handleUpdateStatus = (status: string) => {
-    updateTicket.mutate({ id: ticket.ticket_id, payload: { status } }, {
-      onSuccess: () => toast.success(`Status updated to ${status}`)
-    });
+    updateTicket.mutate({ id: ticket.ticket_id, payload: { status } }, { onSuccess: () => toast.success(`Status updated to ${status}`) });
   };
-
   const handleUpdatePriority = (priority: string) => {
-    updateTicket.mutate({ id: ticket.ticket_id, payload: { priority } }, {
-      onSuccess: () => toast.success(`Priority updated to ${priority}`)
-    });
+    updateTicket.mutate({ id: ticket.ticket_id, payload: { priority } }, { onSuccess: () => toast.success(`Priority updated to ${priority}`) });
   };
-
   const handleAddNote = () => {
     if (!noteText.trim()) return;
     updateTicket.mutate({ id: ticket.ticket_id, payload: { notes: noteText } }, {
-      onSuccess: () => {
-        setNoteText("");
-        toast.success("Note added");
-      }
+      onSuccess: () => { setNoteText(""); toast.success("Note added"); },
     });
   };
 
-  const StatusStepper = () => {
-    const statuses = ["Open", "In Progress", "Closed"];
-    const currentIndex = statuses.indexOf(ticket.status);
+  const stateMeta = {
+    overdue: { label: "Past due", color: "var(--td-sla-overdue)" },
+    at_risk: { label: "At risk", color: "var(--td-sla-at-risk)" },
+    resolved: { label: "Resolved", color: "var(--td-status-closed)" },
+    on_track: { label: "On track", color: "var(--td-sla-on-track)" },
+  }[currentState];
 
-    return (
-      <div className="flex items-center w-full my-6">
-        {statuses.map((s, idx) => {
-          const isCompleted = idx < currentIndex || ticket.status === "Closed";
-          const isCurrent = idx === currentIndex;
-          
-          return (
-            <div key={s} className="flex items-center flex-1 last:flex-none">
-              <div className="flex flex-col items-center gap-2 relative z-10">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                  isCompleted ? "bg-primary border-primary text-primary-foreground" :
-                  isCurrent ? "border-primary text-primary bg-background" :
-                  "border-muted bg-background text-muted-foreground"
-                }`}>
-                  {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : 
-                   isCurrent ? <Circle className="w-4 h-4 fill-current" /> :
-                   <Circle className="w-4 h-4" />}
-                </div>
-                <span className={`text-xs font-medium absolute top-10 whitespace-nowrap ${
-                  isCurrent || isCompleted ? "text-foreground" : "text-muted-foreground"
-                }`}>
-                  {s}
-                </span>
-              </div>
-              {idx < statuses.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-2 transition-colors ${
-                  isCompleted ? "bg-primary" : "bg-muted"
-                }`} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  const events = [
+    { id: "open", kind: "open" as string, text: "Ticket created", at: ticket.created_at },
+    ...ticket.notes.map((n) => ({ id: String(n.id), kind: n.kind as string, text: n.note_text, at: n.created_at })),
+  ];
 
   return (
     <Layout>
-      <div className="max-w-[1200px] mx-auto flex flex-col lg:flex-row gap-6 items-start">
-        
-        {/* Main Content Column */}
-        <div className="flex-1 flex flex-col gap-6 w-full">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild className="shrink-0">
-              <Link to="/tickets"><ArrowLeft className="w-5 h-5" /></Link>
-            </Button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
-                  {ticket.subject}
-                </h1>
-                <Badge variant="outline" className="hidden sm:inline-flex">
-                  {ticket.ticket_id}
-                </Badge>
-              </div>
-              <p className="text-muted-foreground">
-                Opened {formatTimeAgo(ticket.created_at)} by <span className="font-medium text-foreground">{ticket.customer_name}</span>
-              </p>
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-6">
+        <div className="flex items-start gap-3">
+          <Button variant="ghost" size="icon" asChild className="mt-0.5 shrink-0"><Link to="/tickets" aria-label="Back"><ArrowLeft className="size-4" /></Link></Button>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="rounded-md border border-border px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{ticket.ticket_id}</span>
+              <StatusBadge status={ticket.status} />
+              <span className="flex items-center gap-1 text-xs text-muted-foreground"><PriorityMark priority={ticket.priority} size={14} />{ticket.priority}</span>
             </div>
+            <h1 className="font-display mt-2 text-2xl font-semibold leading-tight sm:text-3xl">{ticket.subject}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Opened {formatTimeAgo(ticket.created_at)} · last update {formatTimeAgo(ticket.updated_at)}</p>
           </div>
+          {ticket.status !== "Closed" ? (
+            <Button className="glow-primary hidden h-9 sm:inline-flex" onClick={() => handleUpdateStatus("Closed")}><CheckCircle2 className="size-4" />Resolve</Button>
+          ) : (
+            <Button variant="outline" className="hidden h-9 sm:inline-flex" onClick={() => handleUpdateStatus("Open")}>Reopen</Button>
+          )}
+        </div>
 
-          <Card className="bg-[var(--td-surface)] border-[var(--td-border)]">
-            <CardHeader className="pb-4 border-b border-[var(--td-border)]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[var(--td-raised)] flex items-center justify-center">
-                  <User className="w-5 h-5 text-[var(--td-muted)]" />
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="flex min-w-0 flex-col gap-6">
+            <section className="card-surface p-5 sm:p-6">
+              <div className="flex items-center gap-3 border-b border-border pb-4">
+                <Avatar name={ticket.customer_name} email={ticket.customer_email} size="md" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">{ticket.customer_name}</p>
+                  <a href={`mailto:${ticket.customer_email}`} className="text-xs text-muted-foreground hover:text-primary">{ticket.customer_email}</a>
                 </div>
-                <div>
-                  <div className="font-medium">{ticket.customer_name}</div>
-                  <div className="text-sm text-[var(--td-muted)]">{ticket.customer_email}</div>
-                </div>
+                <span className="ml-auto hidden text-xs text-muted-foreground sm:block">{formatDateTime(ticket.created_at)}</span>
               </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-[var(--td-text)]">
-                {ticket.description}
-              </div>
-            </CardContent>
-          </Card>
+              <p className="whitespace-pre-wrap pt-4 text-[14px] leading-relaxed">{ticket.description}</p>
+            </section>
 
-          {/* Composer */}
-          <Card className="shadow-sm border-[var(--td-border)] bg-[var(--td-surface)]">
-            <CardContent className="p-4">
-              <Textarea 
-                placeholder="Type a note to add to the timeline..."
-                className="h-[120px] resize-none bg-[var(--td-bg)] border-[var(--td-border)] focus-visible:ring-[var(--td-primary)] mb-3"
-                value={noteText}
-                onChange={e => setNoteText(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    handleAddNote();
-                  }
-                }}
-              />
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-[var(--td-muted)] hidden sm:inline-block">Press <kbd className="font-mono bg-[var(--td-raised)] px-1 rounded">⌘ Enter</kbd> to submit</span>
-                <Button 
-                  className="bg-[var(--td-primary)] text-white hover:opacity-90 ml-auto"
-                  onClick={handleAddNote}
-                  disabled={!noteText.trim() || updateTicket.isPending}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Add note
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Timeline */}
-          <div className="mt-2 mb-12">
-            <h3 className="text-lg font-semibold flex items-center gap-2 mb-6">
-              <History className="w-5 h-5 text-[var(--td-muted)]" /> Activity timeline
-            </h3>
-            
-            <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-[2px] before:bg-[var(--td-border)]">
-              
-              {/* Original Post Marker */}
-              <div className="relative flex items-start gap-4">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full border-[4px] border-[var(--td-bg)] bg-[var(--td-raised)] text-[var(--td-muted)] z-10 shrink-0">
-                  <Ticket className="w-4 h-4" />
-                </div>
-                <div className="flex-1 p-4 rounded-xl border border-[var(--td-border)] bg-[var(--td-surface)] shadow-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-sm">Ticket Opened</span>
-                    <time className="text-xs text-[var(--td-muted)]">{formatDateTime(ticket.created_at)}</time>
-                  </div>
-                  <p className="text-sm text-[var(--td-muted)]">System received the ticket.</p>
-                </div>
-              </div>
-
-              {ticket.notes.map((note) => (
-                <div key={note.id} className="relative flex items-start gap-4">
-                  <div className={`flex items-center justify-center w-10 h-10 rounded-full border-[4px] border-[var(--td-bg)] z-10 shrink-0 ${
-                    note.kind === 'status_change' ? 'bg-[var(--td-primary)] text-white' : 'bg-[var(--td-raised)] text-[var(--td-text)]'
-                  }`}>
-                    {note.kind === 'status_change' ? <CheckCircle2 className="w-4 h-4" /> : <MessageSquare className="w-4 h-4 text-[var(--td-muted)]" />}
-                  </div>
-                  <div className="flex-1 p-4 rounded-xl border border-[var(--td-border)] bg-[var(--td-surface)] shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">
-                        {note.kind === 'status_change' ? 'System' : 'Support Agent'}
+            <section>
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold"><History className="size-4 text-muted-foreground" />Activity <span className="text-xs font-normal text-muted-foreground">{events.length}</span></h2>
+              <ol className="relative space-y-4 before:absolute before:bottom-2 before:left-[15px] before:top-2 before:w-px before:bg-border">
+                {events.map((e) => {
+                  const system = e.kind !== "note";
+                  return (
+                    <li key={e.id} className="relative flex gap-3">
+                      <span className={`z-10 grid size-8 shrink-0 place-items-center rounded-full border border-border ${system ? "bg-background text-muted-foreground" : "bg-primary/15 text-primary"}`}>
+                        {e.kind === "open" ? <Ticket className="size-3.5" /> : system ? <CheckCircle2 className="size-3.5" /> : <MessageSquare className="size-3.5" />}
                       </span>
-                      <time className="text-xs text-[var(--td-muted)]">{formatDateTime(note.created_at)}</time>
-                    </div>
-                    <p className={`text-sm whitespace-pre-wrap ${note.kind === 'status_change' ? 'text-[var(--td-muted)] font-medium' : 'text-[var(--td-text)]'}`}>
-                      {note.note_text}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      {system ? (
+                        <div className="flex min-h-8 flex-1 items-center justify-between gap-3 text-[13px] text-muted-foreground"><span>{e.text}</span><time className="shrink-0 text-xs">{formatTimeAgo(e.at)}</time></div>
+                      ) : (
+                        <div className="card-surface flex-1 p-4">
+                          <div className="mb-1.5 flex items-center justify-between"><span className="text-[13px] font-semibold">Support agent</span><time className="text-xs text-muted-foreground">{formatTimeAgo(e.at)}</time></div>
+                          <p className="whitespace-pre-wrap text-[13px] leading-relaxed">{e.text}</p>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+
+            <section className="card-surface p-4">
+              <Textarea
+                placeholder="Write an internal note…"
+                className="min-h-[96px] resize-none border-0 bg-transparent p-1 shadow-none focus-visible:ring-0"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAddNote(); }}
+              />
+              <div className="flex items-center justify-between border-t border-border pt-3">
+                <span className="hidden text-xs text-muted-foreground sm:inline"><kbd className="rounded border border-border px-1 font-mono">⌘ Enter</kbd> to post</span>
+                <Button className="ml-auto h-8" onClick={handleAddNote} disabled={!noteText.trim() || updateTicket.isPending}><Send className="size-3.5" />Add note</Button>
+              </div>
+            </section>
           </div>
-        </div>
 
-        {/* Sidebar Column */}
-        <div className="w-full lg:w-80 shrink-0 flex flex-col gap-6">
-          <Card className="overflow-hidden">
-            <div className={`h-2 w-full ${
-              currentState === 'overdue' ? 'bg-rose-500' :
-              currentState === 'at_risk' ? 'bg-amber-500' :
-              currentState === 'resolved' ? 'bg-neutral-500' : 'bg-emerald-500'
-            }`} />
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center text-center">
-                  <div className="flex justify-center mb-6">
-                    <SlaRing 
-                      dueAt={ticket.due_at} 
-                      createdAt={ticket.created_at} 
-                      status={ticket.status} 
-                      priority={ticket.priority} 
-                      size="lg" 
-                    />
-                  </div>
-                <h3 className="font-bold text-xl mb-1">
-                  {currentState === 'overdue' ? 'SLA Overdue' :
-                   currentState === 'at_risk' ? 'SLA At Risk' :
-                   currentState === 'resolved' ? 'SLA Met' : 'SLA On Track'}
-                </h3>
-                {ticket.status !== "Closed" && (
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium text-foreground">{formatTimeLeft(ticket.due_at, now, ticket.status)}</span>
-                  </p>
-                )}
-                {ticket.resolved_at && (
-                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Resolved {formatDateTime(ticket.resolved_at)}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-6 mb-8">
-                <StatusStepper />
-              </div>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">Status</label>
-                  <Select value={ticket.status} onValueChange={handleUpdateStatus}>
-                    <SelectTrigger className="w-full font-medium">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground">Priority</label>
-                  <Select value={ticket.priority} onValueChange={handleUpdatePriority}>
-                    <SelectTrigger className="w-full font-medium">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-24">
+            <section className="card-surface relative overflow-hidden p-5">
+              <span className="absolute inset-x-0 top-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${stateMeta.color}, transparent)` }} />
+              <div className="flex flex-col items-center gap-4 text-center">
+                <SlaRing dueAt={ticket.due_at} createdAt={ticket.created_at} status={ticket.status} priority={ticket.priority} size="lg" />
+                <div>
+                  <p className="eyebrow">Response SLA</p>
+                  <p className="mt-1 text-lg font-semibold" style={{ color: stateMeta.color }}>{stateMeta.label}</p>
+                  <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><Clock className="size-3.5 shrink-0" />{ticket.resolved_at ? `Resolved ${formatDateTime(ticket.resolved_at)}` : formatTimeLeft(ticket.due_at, now, ticket.status)}</p>
                 </div>
               </div>
+            </section>
 
-            </CardContent>
-          </Card>
+            <section className="card-surface space-y-4 p-5">
+              <Field label="Status">
+                <Select value={ticket.status} onValueChange={handleUpdateStatus}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Open", "In Progress", "Closed"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Field label="Priority">
+                <Select value={ticket.priority} onValueChange={handleUpdatePriority}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>{["Low", "Medium", "High", "Urgent"].map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
+                </Select>
+              </Field>
+              <Separator />
+              <dl className="space-y-2.5 text-[13px]">
+                <div className="flex justify-between"><dt className="text-muted-foreground">Due</dt><dd>{formatDateTime(ticket.due_at)}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Created</dt><dd>{formatDateTime(ticket.created_at)}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Customer</dt><dd><Link to="/customers" className="hover:text-primary">{ticket.customer_name}</Link></dd></div>
+              </dl>
+            </section>
+          </aside>
         </div>
-
       </div>
     </Layout>
   );

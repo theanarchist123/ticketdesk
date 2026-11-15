@@ -32,6 +32,7 @@ export interface Stats {
   in_progress: number;
   closed: number;
   overdue: number;
+  at_risk?: number;
   sla_met_pct?: number;
   by_priority?: Record<string, number>;
 }

@@ -60,32 +60,24 @@ The **Dockerfile** uses a multi-stage approach:
 
 ---
 
-## Design: The "Calm Command Center"
+## Design: The Support Workbench
 
 ### Color Scheme
 
-I went with a **dark-first design** using deep navy/midnight tones (`#0E1220` background, `#151A2C` surfaces) because support agents stare at this tool for hours. Bright white interfaces cause eye strain over long sessions. The dark theme is the default, and every color was chosen to be low-glare but still readable.
+The interface is organized around the work support agents do: scan the inbox, prioritize by response deadline, and keep customer history close to each request. The default is a light, neutral workspace with a dark alternate theme. Overview is a concise operations brief; the inbox has saved overdue and at-risk views; the customer directory groups recent ticket history by email.
 
-The color palette uses **oklch color space** for consistency across the UI. Key semantic colors:
-- **Purple (`#7C7CFF`)** — the brand/primary color. Used for buttons, focus states, and "on track" SLA indicators
-- **Rose red (`#F43F5E`)** — overdue/urgent. Immediately draws the eye to tickets that need attention
-- **Orange (`#FB7C3C`)** — at-risk/high priority. A warning state between "fine" and "overdue"
-- **Green (`#34D399`)** — resolved/closed. Visual reward for completing work
+The palette reserves blue for actions, rose for overdue work, amber for at-risk work, and green for resolved states. Status is always shown with a text label as well as color.
 
 ### Typography
 
-I used three fonts from Google Fonts:
+The app bundles three variable fonts locally:
 - **Bricolage Grotesque** — for headings and display text (it has personality without being distracting)
 - **Instrument Sans** — for body text (clean, highly legible at small sizes)
 - **JetBrains Mono** — for ticket IDs and timestamps (monospace for easy scanning)
 
 ### Design Inspiration
 
-I drew inspiration from tools like **Linear**, **Height**, and **Notion** — apps that feel premium and calm rather than cluttered. The key principles:
-- No shadows anywhere — structure comes from borders and background color differences
-- Generous whitespace so the eye can rest
-- Animations are subtle (fade-ins, not bounces) and respect `prefers-reduced-motion`
-- Closed tickets dim to 65% opacity so they visually recede
+The workflow draws on established support inbox patterns: a shared queue with filtered views and a ticket workspace that keeps status and customer context nearby. See [Intercom Inbox](https://www.intercom.com/help/en/articles/6258745-the-inbox-explained) and [Zendesk Agent Workspace](https://support.zendesk.com/hc/en-us/articles/4408821259930-About-the-Zendesk-Agent-Workspace). TicketDesk adapts those patterns to a small team and its current single-channel ticket model.
 
 ---
 

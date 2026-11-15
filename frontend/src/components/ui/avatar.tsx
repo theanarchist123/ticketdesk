@@ -22,11 +22,6 @@ export function Avatar({ name, email, size = "md", className, ...props }: Avatar
   }
   const hue = Math.abs(hash) % 360;
   
-  // Use a muted saturation and lightness for the background, and matching text color
-  // Actually, standard is a soft background with darker/more vibrant text.
-  const bgColor = `hsl(${hue}, 40%, 20%)`; // dark background
-  const textColor = `hsl(${hue}, 80%, 80%)`; // light text
-
   const sizeClass = {
     sm: "w-6 h-6 text-[10px]",
     md: "w-8 h-8 text-xs",
@@ -35,8 +30,8 @@ export function Avatar({ name, email, size = "md", className, ...props }: Avatar
 
   return (
     <div
-      className={cn("flex items-center justify-center shrink-0 rounded-full font-medium ring-1 ring-white/10", sizeClass, className)}
-      style={{ backgroundColor: bgColor, color: textColor }}
+      className={cn("flex items-center justify-center shrink-0 rounded-full font-semibold bg-[oklch(0.93_0.04_var(--h))] text-[oklch(0.38_0.09_var(--h))] dark:bg-[oklch(0.35_0.06_var(--h))] dark:text-[oklch(0.9_0.06_var(--h))]", sizeClass, className)}
+      style={{ "--h": hue } as React.CSSProperties}
       {...props}
     >
       {initials}
