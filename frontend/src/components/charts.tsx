@@ -40,8 +40,9 @@ export function Delta({ value, goodWhen = "up", suffix = "vs prev." }: { value: 
 }
 
 /* ── Sparkline ───────────────────────────────────────────────────────────── */
-export function Sparkline({ data, color = "var(--primary)", height = 36, className }: { data: number[]; color?: string; height?: number; className?: string }) {
+export function Sparkline({ data: raw, color = "var(--primary)", height = 36, className }: { data: number[]; color?: string; height?: number; className?: string }) {
   const id = useId();
+  const data = raw.length > 1 ? raw : [0, 0]; // empty/short data would produce an invalid SVG path
   const W = 120, max = Math.max(1, ...data), min = Math.min(...data, 0);
   const pts = data.map((v, i) => [(i / Math.max(1, data.length - 1)) * W, height - 4 - ((v - min) / (max - min || 1)) * (height - 10)] as const);
   const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
@@ -67,6 +68,8 @@ export function AreaChart({ data, color = "var(--primary)", height = 200, unit =
   const line = useMemo(() => data.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(d.value).toFixed(1)}`).join(" "), [data, max]); // eslint-disable-line
   const ticks = [0, max / 2, max];
   const labelIdx = [0, Math.floor((data.length - 1) / 2), data.length - 1];
+
+  if (data.length < 2) return <div className="grid place-items-center text-sm text-muted-foreground" style={{ height }}>No data to chart yet</div>;
 
   return (
     <div className="relative">
@@ -104,6 +107,7 @@ export function BarChart({ data, color = "var(--primary)", height = 160, unit = 
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...data.map((d) => d.value));
   const top = data.findIndex((d) => d.value === max);
+  if (!data.length) return <div className="grid place-items-center text-sm text-muted-foreground" style={{ height }}>No data to chart yet</div>;
   return (
     <div className="relative" style={{ height }}>
       <div className="flex h-[calc(100%-18px)] items-end gap-1.5 border-b border-border">
@@ -231,5 +235,15 @@ export function ChartCard({ title, subtitle, right, children, className }: { tit
       </div>
       {children}
     </section>
+  );
+}
+
+
+export function AnalyticsError() {
+  return (
+    <div role="alert" className="rounded-xl border border-[var(--td-urgent)]/30 bg-[var(--td-urgent)]/10 px-4 py-3 text-[13px]">
+      <p className="font-semibold text-[var(--td-urgent)]">Couldn't load analytics</p>
+      <p className="mt-0.5 text-muted-foreground">The server didn't return <code className="font-mono">/api/analytics</code>. If you recently updated the code, stop and restart the backend (<code className="font-mono">uvicorn app.main:app</code>) so it picks up the new endpoint, then refresh.</p>
+    </div>
   );
 }

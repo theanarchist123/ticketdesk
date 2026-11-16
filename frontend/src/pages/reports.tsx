@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Layout } from "@/components/layout";
 import { useAnalytics, useStats } from "@/hooks/useTickets";
-import { AreaChart, BarChart, ChartCard, Donut, HBars, Heatmap, StatTile } from "@/components/charts";
+import { AnalyticsError, AreaChart, BarChart, ChartCard, Donut, HBars, Heatmap, StatTile } from "@/components/charts";
 import { delta, fmtHours, lastDays, previousTotal, sum, WEEKDAYS } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ const PRIORITIES = [
 export default function ReportsPage() {
   const [range, setRange] = useState<(typeof RANGES)[number]>(30);
   const { data: stats } = useStats();
-  const { data: a } = useAnalytics();
+  const { data: a, isError: analyticsFailed } = useAnalytics();
 
   const created = lastDays(a?.created_per_day, range);
   const resolved = lastDays(a?.resolved_per_day, range);
@@ -44,6 +44,8 @@ export default function ReportsPage() {
             ))}
           </div>
         </div>
+
+        {analyticsFailed && <AnalyticsError />}
 
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile className="lift" label={`Created · ${range}d`} value={createdTotal} color="var(--primary)" spark={created.map((d) => d.value)} delta={createdDelta} goodWhen="down" hint={createdDelta === null ? "No earlier period to compare" : undefined} />

@@ -9,7 +9,7 @@ import { SlaRing } from "@/components/ui/sla-ring";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityMark } from "@/components/ui/priority-mark";
 import { Avatar } from "@/components/ui/avatar";
-import { AreaChart, ChartCard, Delta, Donut } from "@/components/charts";
+import { AnalyticsError, AreaChart, ChartCard, Delta, Donut } from "@/components/charts";
 import { delta, sum, weekPoints } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -56,7 +56,7 @@ export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
   const { data: queue, isLoading: qLoading } = useTickets({ limit: 8, status: "Open,In Progress" });
   const { data: recentData } = useTickets({ limit: 5, sort: "newest" });
-  const { data: analytics } = useAnalytics();
+  const { data: analytics, isError: analyticsFailed } = useAnalytics();
   const now = useNow();
 
   const active = (stats?.open ?? 0) + (stats?.in_progress ?? 0);
@@ -109,6 +109,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        {analyticsFailed && <AnalyticsError />}
 
         {/* KPIs */}
         <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
