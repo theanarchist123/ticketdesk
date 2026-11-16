@@ -186,7 +186,7 @@ export function HBars({ data, color = "var(--primary)", max, format }: { data: (
 }
 
 /* ── Heatmap (weekday x hour) ────────────────────────────────────────────── */
-export function Heatmap({ grid, rows }: { grid: number[][]; rows: string[] }) {
+export function Heatmap({ grid, rows, todayRow }: { grid: number[][]; rows: string[]; todayRow?: number }) {
   const [hover, setHover] = useState<{ r: number; c: number } | null>(null);
   const max = Math.max(1, ...grid.flat());
   const fmtHour = (h: number) => `${h % 12 || 12}${h < 12 ? "am" : "pm"}`;
@@ -195,19 +195,19 @@ export function Heatmap({ grid, rows }: { grid: number[][]; rows: string[] }) {
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: "32px repeat(24, minmax(0, 1fr))" }}>
         {grid.map((row, r) => (
           <div key={r} className="contents">
-            <span className="self-center text-[10px] text-muted-foreground">{rows[r]}</span>
+            <span className={cn("self-center text-[10px]", r === todayRow ? "font-semibold text-primary" : "text-muted-foreground")}>{rows[r]}{r === todayRow && <span className="block text-[8px] uppercase tracking-wide">today</span>}</span>
             {row.map((v, c) => (
-              <div key={c} onMouseEnter={() => setHover({ r, c })} onMouseLeave={() => setHover(null)} className="aspect-square rounded-[3px] transition-transform hover:scale-125 hover:ring-1 hover:ring-foreground/40"
-                style={{ background: v ? `color-mix(in oklch, var(--primary) ${Math.round(18 + (v / max) * 82)}%, var(--card))` : "var(--muted)", opacity: v ? 1 : 0.5 }} />
+              <div key={c} onMouseEnter={() => setHover({ r, c })} onMouseLeave={() => setHover(null)} className={cn("aspect-square rounded-[3px] transition-transform hover:scale-125 hover:ring-1 hover:ring-foreground/40", r === todayRow && !v && "ring-1 ring-primary/25", r === todayRow && !!v && "ring-2 ring-primary")}
+                style={{ background: v ? `color-mix(in oklch, var(--primary) ${Math.round(45 + (v / max) * 55)}%, var(--card))` : "var(--muted)", opacity: v ? 1 : 0.5 }} />
             ))}
           </div>
         ))}
         <span />
-        {Array.from({ length: 24 }, (_, h) => <span key={h} className="text-center text-[9px] text-muted-foreground">{h % 6 === 0 ? fmtHour(h) : ""}</span>)}
+        {Array.from({ length: 24 }, (_, h) => <span key={h} className="text-center text-[9px] text-muted-foreground">{h % 3 === 0 ? fmtHour(h) : ""}</span>)}
       </div>
       <div className="mt-3 flex min-h-5 items-center justify-between text-xs text-muted-foreground">
         <span>{hover ? <><span className="font-medium text-foreground">{grid[hover.r][hover.c]} tickets</span> · {rows[hover.r]} {fmtHour(hover.c)}</> : "Hover a cell for details"}</span>
-        <span className="flex items-center gap-1.5">Less<span className="flex gap-0.5">{[0.15, 0.4, 0.65, 1].map((o) => <span key={o} className="size-2.5 rounded-[2px]" style={{ background: `color-mix(in oklch, var(--primary) ${Math.round(o * 100)}%, var(--card))` }} />)}</span>More</span>
+        <span className="flex items-center gap-1.5">Less<span className="flex gap-0.5">{[0.45, 0.65, 0.85, 1].map((o) => <span key={o} className="size-2.5 rounded-[2px]" style={{ background: `color-mix(in oklch, var(--primary) ${Math.round(o * 100)}%, var(--card))` }} />)}</span>More</span>
       </div>
     </div>
   );

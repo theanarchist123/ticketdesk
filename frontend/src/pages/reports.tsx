@@ -94,7 +94,7 @@ export default function ReportsPage() {
         </div>
 
         <ChartCard title="When tickets arrive" subtitle="All tickets by weekday and hour of creation (your local time) — use it to plan staffing">
-          <Heatmap grid={a?.heatmap ?? Array.from({ length: 7 }, () => Array(24).fill(0))} rows={WEEKDAYS} />
+          <Heatmap grid={a?.heatmap ?? Array.from({ length: 7 }, () => Array(24).fill(0))} rows={WEEKDAYS} todayRow={(new Date().getDay() + 6) % 7} />
         </ChartCard>
       </div>
     </Layout>
