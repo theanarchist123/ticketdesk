@@ -106,7 +106,7 @@ export default function TicketsPage() {
 
         {slaFilter !== "all" && (
           <div className="flex items-center justify-between rounded-xl border border-[var(--td-sla-overdue)]/30 bg-[var(--td-sla-overdue)]/10 px-4 py-2.5 text-[13px]">
-            <span className="flex items-center gap-2 font-medium text-[var(--td-sla-overdue)]"><AlertCircle className="size-4" />Showing {slaFilter === "overdue" ? "past-due" : "at-risk"} tickets only</span>
+            <span className="flex items-center gap-2 font-medium text-[var(--td-sla-overdue)]"><AlertCircle className="size-4" />Showing {({ overdue: "past-due", at_risk: "at-risk", on_track: "on-track" } as Record<string, string>)[slaFilter] ?? slaFilter} tickets only</span>
             <button onClick={() => updateParams({ sla: null })} className="font-semibold hover:underline">Show all</button>
           </div>
         )}
@@ -132,6 +132,8 @@ export default function TicketsPage() {
           onStatusChange={(v) => updateParams({ status: v })}
           priorityFilter={priorityFilter}
           onPriorityChange={(v) => updateParams({ priority: v })}
+          slaFilter={slaFilter}
+          onSlaChange={(v) => updateParams({ sla: v })}
           sortFilter={sortFilter}
           onSortChange={(v) => updateParams({ sort: v })}
           stats={stats}

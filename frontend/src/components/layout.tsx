@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { BarChart3, Columns3, Flame, Inbox, LayoutGrid, Plus, Search, Ticket, Timer, Users, Timer as Clock, ShieldCheck } from "lucide-react";
+import { BarChart3, Columns3, Inbox, LayoutGrid, Plus, Search, Ticket, Users, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStats } from "@/hooks/useTickets";
 import { CommandPalette } from "@/components/command-palette";
@@ -88,22 +88,6 @@ export function AppShell() {
                   {l.href === "/tickets" && activeCount > 0 && <span className="relative z-10 ml-auto rounded-md bg-white/5 px-1.5 text-[11px] tabular-nums text-muted-foreground">{activeCount}</span>}
                 </Link>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="eyebrow px-3 pb-2">Views</p>
-            <div className="space-y-0.5">
-              <Link to="/tickets?sla=overdue" className={item(false)}>
-                <Flame className="size-4 text-[var(--td-sla-overdue)]" strokeWidth={1.8} />Past due
-                {!!stats?.overdue && <span className="ml-auto rounded-md bg-[var(--td-sla-overdue)]/15 px-1.5 text-[11px] font-semibold tabular-nums text-[var(--td-sla-overdue)]">{stats.overdue}</span>}
-              </Link>
-              <Link to="/tickets?sla=at_risk" className={item(false)}>
-                <Timer className="size-4 text-[var(--td-sla-at-risk)]" strokeWidth={1.8} />At risk
-              </Link>
-              <Link to="/tickets?priority=Urgent" className={item(false)}>
-                <Clock className="size-4 text-[var(--td-urgent)]" strokeWidth={1.8} />Urgent
-              </Link>
             </div>
           </div>
 

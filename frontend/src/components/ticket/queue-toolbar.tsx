@@ -10,6 +10,8 @@ export interface QueueToolbarProps {
   onStatusChange: (status: string) => void;
   priorityFilter: string;
   onPriorityChange: (val: string) => void;
+  slaFilter: string;
+  onSlaChange: (val: string) => void;
   sortFilter: string;
   onSortChange: (val: string) => void;
   stats?: Stats;
@@ -17,7 +19,7 @@ export interface QueueToolbarProps {
 
 const selectCls = "h-9 rounded-lg border border-border bg-card px-3 text-[13px] text-foreground outline-none focus:border-primary";
 
-export function QueueToolbar({ searchInput, onSearchChange, statusFilter, onStatusChange, priorityFilter, onPriorityChange, sortFilter, onSortChange, stats }: QueueToolbarProps) {
+export function QueueToolbar({ searchInput, onSearchChange, statusFilter, onStatusChange, priorityFilter, onPriorityChange, slaFilter, onSlaChange, sortFilter, onSortChange, stats }: QueueToolbarProps) {
   const TABS = [
     { id: "all", label: "All", count: stats?.all },
     { id: "Open", label: "Open", count: stats?.open },
@@ -49,6 +51,12 @@ export function QueueToolbar({ searchInput, onSearchChange, statusFilter, onStat
         <select value={priorityFilter} onChange={(e) => onPriorityChange(e.target.value)} className={selectCls} aria-label="Priority">
           <option value="all">All priorities</option>
           {["Urgent", "High", "Medium", "Low"].map((p) => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select value={slaFilter} onChange={(e) => onSlaChange(e.target.value)} className={selectCls} aria-label="SLA">
+          <option value="all">Any SLA</option>
+          <option value="overdue">Past due</option>
+          <option value="at_risk">At risk</option>
+          <option value="on_track">On track</option>
         </select>
         <select value={sortFilter} onChange={(e) => onSortChange(e.target.value)} className={selectCls} aria-label="Sort">
           <option value="priority_sla">Most urgent first</option>
