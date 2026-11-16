@@ -395,3 +395,45 @@ class TestHealth:
         resp = client.get("/api/health")
         assert resp.status_code == 200
         assert resp.json() == {"ok": True}
+
+
+class TestTimestampsAndAnalytics:
+    """Timestamps must carry a UTC marker, and /analytics must bucket by the caller's timezone."""
+
+    def _make(self, **kw):
+        base = {"customer_name": "Test User", "customer_email": "t@example.com",
+                "subject": "Test subject line", "description": "A detailed description here.", "priority": "Medium"}
+        base.update(kw)
+        return client.post("/api/tickets", json=base)
+
+    def test_timestamps_are_utc_marked(self):
+        self._make()
+        item = client.get("/api/tickets").json()[0]
+        assert item["created_at"].endswith("Z") or item["created_at"].endswith("+00:00")
+        assert item["due_at"].endswith("Z") or item["due_at"].endswith("+00:00")
+
+    def test_analytics_counts_new_ticket_today(self):
+        self._make()
+        d = client.get("/api/analytics?tz_offset=0").json()
+        assert d["created_per_day"][-1]["count"] == 1
+        assert sum(sum(r) for r in d["heatmap"]) == 1
+        assert d["created_per_week"][-1]["count"] == 1
+        assert d["sla_mix"]["on_track"] == 1
+        assert d["customers"]["total"] == 1
+
+    def test_analytics_respects_timezone(self):
+        from datetime import datetime, timezone, timedelta
+        self._make()
+        utc_now = datetime.now(timezone.utc)
+        for off in (-480, 0, 330, 840):
+            d = client.get(f"/api/analytics?tz_offset={off}").json()
+            local = utc_now + timedelta(minutes=off)
+            assert d["heatmap"][local.weekday()][local.hour] == 1, off
+
+    def test_analytics_resolution_time(self):
+        tid = self._make().json()["ticket_id"]
+        client.put(f"/api/tickets/{tid}", json={"status": "Closed"})
+        d = client.get("/api/analytics").json()
+        assert d["avg_resolution_hours"] is not None and d["avg_resolution_hours"] < 0.1
+        assert d["resolved_per_day"][-1]["count"] == 1
+        assert d["avg_open_age_hours"] is None

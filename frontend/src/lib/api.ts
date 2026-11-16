@@ -65,3 +65,11 @@ export async function createTicket(
   if (!res.ok) throw new Error("Failed to create ticket");
   return res.json();
 }
+
+export async function fetchAnalytics(): Promise<import("./types").Analytics> {
+  // Send our UTC offset so the server buckets days / weekdays / hours in the user's own timezone.
+  const tz = -new Date().getTimezoneOffset();
+  const res = await fetch(`${API_BASE}/analytics?tz_offset=${tz}`);
+  if (!res.ok) throw new Error("Failed to fetch analytics");
+  return res.json();
+}

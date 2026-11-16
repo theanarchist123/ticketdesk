@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 import { ArrowRight, ArrowUpRight, Flame, Plus, Sparkles } from "lucide-react";
 import { Layout } from "@/components/layout";
-import { useStats, useTickets } from "@/hooks/useTickets";
+import { useAnalytics, useStats, useTickets } from "@/hooks/useTickets";
 import { useNow } from "@/hooks/useNow";
 import { formatTimeAgo, formatTimeLeft } from "@/lib/format";
 import { SlaRing } from "@/components/ui/sla-ring";
@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityMark } from "@/components/ui/priority-mark";
 import { Avatar } from "@/components/ui/avatar";
 import { AreaChart, ChartCard, Delta, Donut } from "@/components/charts";
-import { delta, perWeek, slaMix, sum } from "@/lib/analytics";
+import { delta, sum, weekPoints } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const PRIORITIES = [
@@ -55,7 +55,8 @@ function Gauge({ pct, color }: { pct: number; color: string }) {
 export default function DashboardPage() {
   const { data: stats, isLoading } = useStats();
   const { data: queue, isLoading: qLoading } = useTickets({ limit: 8, status: "Open,In Progress" });
-  const { data: all } = useTickets({ limit: 200, sort: "newest" });
+  const { data: recentData } = useTickets({ limit: 5, sort: "newest" });
+  const { data: analytics } = useAnalytics();
   const now = useNow();
 
   const active = (stats?.open ?? 0) + (stats?.in_progress ?? 0);
@@ -69,11 +70,11 @@ export default function DashboardPage() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const an = useMemo(() => {
-    const t = all?.data ?? [];
-    const weeks = perWeek(t, 12);
+    const weeks = weekPoints(analytics);
     const last4 = sum(weeks.slice(-4)), prev4 = sum(weeks.slice(-8, -4));
-    return { weeks, total: sum(weeks), last4, d: delta(last4, prev4), sla: slaMix(t, now), n: t.length, recent: t.slice(0, 5) };
-  }, [all, now]);
+    const sla = analytics?.sla_mix ?? { on_track: 0, at_risk: 0, overdue: 0, resolved: 0 };
+    return { weeks, last4, d: delta(last4, weeks.length >= 8 ? prev4 : null), sla, n: sla.on_track + sla.at_risk + sla.overdue + sla.resolved, recent: recentData?.data ?? [] };
+  }, [analytics, recentData]);
 
   return (
     <Layout>

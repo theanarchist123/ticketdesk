@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { Layout } from "@/components/layout";
-import { useTickets, useUpdateTicket } from "@/hooks/useTickets";
+import { useStats, useTickets, useUpdateTicket } from "@/hooks/useTickets";
 import { useNow } from "@/hooks/useNow";
 import { formatTimeLeft } from "@/lib/format";
 import { computeFrontendSlaState } from "@/lib/sla";
@@ -27,6 +27,8 @@ const slaText: Record<string, string> = {
 export default function BoardPage() {
   const { data, isLoading } = useTickets({ limit: 200, sort: "priority_sla" });
   const update = useUpdateTicket();
+  const { data: stats } = useStats();
+  const totals: Record<string, number | undefined> = { Open: stats?.open, "In Progress": stats?.in_progress, Closed: stats?.closed };
   const now = useNow(30000);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export default function BoardPage() {
               <div className="mb-3 flex items-center gap-2 px-1">
                 <span className="size-2 rounded-full" style={{ background: col.color }} />
                 <h2 className="text-[13px] font-semibold">{col.label}</h2>
-                <span className="ml-auto rounded-md bg-white/5 px-1.5 text-xs tabular-nums text-muted-foreground">{tickets.filter((t) => t.status === col.id).length}</span>
+                <span className="ml-auto rounded-md bg-white/5 px-1.5 text-xs tabular-nums text-muted-foreground">{totals[col.id] ?? tickets.filter((t) => t.status === col.id).length}</span>
               </div>
               <div className="flex min-h-24 flex-col gap-2.5">
                 {isLoading && [0, 1].map((i) => <div key={i} className="h-24 animate-pulse rounded-xl bg-muted" />)}

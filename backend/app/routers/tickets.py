@@ -9,9 +9,9 @@ from app.schemas import (
     TicketCreate, TicketUpdate,
     TicketListItem, TicketDetail,
     TicketCreateResponse, TicketUpdateResponse,
-    StatsOut,
+    StatsOut, AnalyticsOut,
 )
-from app.crud import create_ticket, list_tickets, get_ticket, update_ticket, get_stats
+from app.crud import create_ticket, list_tickets, get_ticket, update_ticket, get_stats, get_analytics
 
 router = APIRouter()
 
@@ -80,3 +80,12 @@ def api_update_ticket(ticket_id: str, body: TicketUpdate, db: Session = Depends(
 @router.get("/stats", response_model=StatsOut)
 def api_stats(db: Session = Depends(get_db)):
     return get_stats(db)
+
+
+@router.get("/analytics", response_model=AnalyticsOut)
+def api_analytics(
+    tz_offset: int = Query(0, ge=-840, le=840, description="Caller's UTC offset in minutes (IST = 330)"),
+    db: Session = Depends(get_db),
+):
+    """Chart data for Overview / Reports / Customers, computed over every ticket."""
+    return get_analytics(db, tz_offset_minutes=tz_offset)

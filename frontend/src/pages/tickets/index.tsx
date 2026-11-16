@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Sparkline } from "@/components/charts";
-import { avgOpenAgeHours, fmtHours, perDay } from "@/lib/analytics";
+import { fmtHours, lastDays } from "@/lib/analytics";
 
 import { Layout } from "@/components/layout";
-import { useTickets, useStats } from "@/hooks/useTickets";
+import { useTickets, useStats, useAnalytics } from "@/hooks/useTickets";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useNow } from "@/hooks/useNow";
 import { QueueToolbar } from "@/components/ticket/queue-toolbar";
@@ -59,12 +59,11 @@ export default function TicketsPage() {
     offset,
   });
 
-  const { data: everything } = useTickets({ limit: 200, sort: "newest" });
+  const { data: analytics } = useAnalytics();
   const insight = useMemo(() => {
-    const t = everything?.data ?? [];
-    const days = perDay(t, 14);
-    return { today: days[days.length - 1].value, spark: days.map((d) => d.value), age: avgOpenAgeHours(t, now) };
-  }, [everything, now]);
+    const days = lastDays(analytics?.created_per_day, 14);
+    return { today: days.length ? days[days.length - 1].value : 0, spark: days.map((d) => d.value), age: analytics?.avg_open_age_hours ?? null };
+  }, [analytics]);
   const total = data?.total || 0;
   const tickets = data?.data || [];
   const hasMore = tickets.length < total;

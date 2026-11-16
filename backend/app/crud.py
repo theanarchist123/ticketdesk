@@ -330,3 +330,92 @@ def get_stats(db: Session) -> dict:
         "sla_met_pct": round(sla_met_pct, 1),
         "by_priority": by_priority,
     }
+
+
+# ── Analytics ────────────────────────────────────────────────────────────────
+
+_AGE_BUCKETS = [("< 1h", 1), ("1–4h", 4), ("4–24h", 24), ("1–3d", 72), ("> 3d", float("inf"))]
+
+
+def get_analytics(db: Session, tz_offset_minutes: int = 0, days: int = 90) -> dict:
+    """Aggregate chart data over ALL tickets.
+
+    `tz_offset_minutes` is the caller's offset east of UTC (IST = 330) so that "today",
+    weekday and hour-of-day buckets match what the user sees on their clock.
+    Rows are read as minimal columns and bucketed in Python: simple and fast for the
+    thousands-of-tickets scale this app targets; at much larger scale this would move to SQL GROUP BY.
+    """
+    from datetime import timedelta, timezone
+    from app.sla import compute_sla_state
+
+    now = datetime.now(timezone.utc)
+    shift = timedelta(minutes=tz_offset_minutes)
+
+    def utc(dt):
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt.astimezone(timezone.utc)
+
+    today = (now + shift).date()
+    rows = db.query(
+        Ticket.status, Ticket.priority, Ticket.created_at, Ticket.due_at, Ticket.resolved_at,
+        Ticket.customer_email, Ticket.customer_name,
+    ).all()
+
+    day_keys = [today - timedelta(days=days - 1 - i) for i in range(days)]
+    created = {d: 0 for d in day_keys}
+    resolved = {d: 0 for d in day_keys}
+    weeks = [0] * 12
+    heat = [[0] * 24 for _ in range(7)]
+    sla_mix = {"on_track": 0, "at_risk": 0, "overdue": 0, "resolved": 0}
+    ages = [0] * len(_AGE_BUCKETS)
+    open_age_hours: list[float] = []
+    resolution_hours: list[float] = []
+    customers: dict[str, dict] = {}
+
+    for status, priority, created_at, due_at, resolved_at, email, name in rows:
+        c = utc(created_at)
+        local = c + shift
+        if local.date() in created:
+            created[local.date()] += 1
+        w = (today - local.date()).days // 7
+        if 0 <= w < 12:
+            weeks[11 - w] += 1
+        heat[local.weekday()][local.hour] += 1
+        sla_mix[compute_sla_state(status, due_at, created_at, priority, now)] += 1
+
+        if status != "Closed":
+            h = (now - c).total_seconds() / 3600
+            open_age_hours.append(h)
+            ages[next(i for i, (_, mx) in enumerate(_AGE_BUCKETS) if h < mx)] += 1
+        elif resolved_at is not None:
+            r = utc(resolved_at)
+            resolution_hours.append((r - c).total_seconds() / 3600)
+            rd = (r + shift).date()
+            if rd in resolved:
+                resolved[rd] += 1
+
+        cust = customers.setdefault(email.lower(), {"name": name, "email": email, "total": 0, "active": 0})
+        cust["total"] += 1
+        if status != "Closed":
+            cust["active"] += 1
+
+    cust_list = list(customers.values())
+    n = len(cust_list)
+    return {
+        "created_per_day": [{"date": d.isoformat(), "count": created[d]} for d in day_keys],
+        "resolved_per_day": [{"date": d.isoformat(), "count": resolved[d]} for d in day_keys],
+        "created_per_week": [
+            {"start": (today - timedelta(days=(11 - i) * 7 + 6)).isoformat(), "count": weeks[i]} for i in range(12)
+        ],
+        "heatmap": heat,
+        "sla_mix": sla_mix,
+        "age_buckets": [{"label": lbl, "count": ages[i]} for i, (lbl, _) in enumerate(_AGE_BUCKETS)],
+        "avg_open_age_hours": round(sum(open_age_hours) / len(open_age_hours), 2) if open_age_hours else None,
+        "avg_resolution_hours": round(sum(resolution_hours) / len(resolution_hours), 2) if resolution_hours else None,
+        "top_customers": sorted(cust_list, key=lambda c: (-c["total"], c["name"]))[:5],
+        "customers": {
+            "total": n,
+            "repeat": sum(1 for c in cust_list if c["total"] > 1),
+            "avg_tickets": round(sum(c["total"] for c in cust_list) / n, 2) if n else 0,
+            "with_active": sum(1 for c in cust_list if c["active"]),
+        },
+    }

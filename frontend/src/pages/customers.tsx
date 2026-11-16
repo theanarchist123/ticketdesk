@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Search, Users, ArrowUpRight, Ticket } from "lucide-react";
 import { Layout } from "@/components/layout";
 import { HBars } from "@/components/charts";
+import { useAnalytics } from "@/hooks/useTickets";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -13,6 +14,7 @@ type Customer = { name: string; email: string; tickets: TicketListItem[]; active
 
 export default function CustomersPage() {
   const [search, setSearch] = useState("");
+  const { data: an } = useAnalytics();
   const { data, isLoading, isError } = useTickets({ limit: 200, sort: "newest" });
   const customers = useMemo(() => {
     const grouped = new Map<string, Customer>();
@@ -36,18 +38,18 @@ export default function CustomersPage() {
       </div>
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
-          { l: "Customers", v: customers.length, c: "var(--primary)" },
-          { l: "Repeat customers", v: customers.length ? `${Math.round((customers.filter((c) => c.tickets.length > 1).length / customers.length) * 100)}%` : "—", c: "var(--td-status-open)" },
-          { l: "Avg. tickets each", v: customers.length ? (customers.reduce((n, c) => n + c.tickets.length, 0) / customers.length).toFixed(1) : "—", c: "var(--td-status-in-progress)" },
-          { l: "Need attention", v: customers.filter((c) => c.active).length, c: "var(--td-sla-at-risk)" },
+          { l: "Customers", v: an ? an.customers.total : "—", c: "var(--primary)" },
+          { l: "Repeat customers", v: an && an.customers.total ? `${Math.round((an.customers.repeat / an.customers.total) * 100)}%` : "—", c: "var(--td-status-open)" },
+          { l: "Avg. tickets each", v: an ? an.customers.avg_tickets.toFixed(1) : "—", c: "var(--td-status-in-progress)" },
+          { l: "Need attention", v: an ? an.customers.with_active : "—", c: "var(--td-sla-at-risk)" },
         ].map((s) => (
           <div key={s.l} className="card-surface lift p-4"><p className="eyebrow">{s.l}</p><p className="stat mt-2 text-3xl leading-none" style={{ color: s.c }}>{s.v}</p></div>
         ))}
       </div>
-      {customers.length > 0 && (
+      {!!an?.top_customers.length && (
         <div className="card-surface mb-5 p-5">
           <h2 className="mb-4 text-sm font-semibold">Tickets per customer</h2>
-          <HBars data={customers.slice().sort((a, b) => b.tickets.length - a.tickets.length).slice(0, 5).map((c) => ({ label: c.name, sub: `${c.active} active`, value: c.tickets.length }))} />
+          <HBars data={an.top_customers.map((c) => ({ label: c.name, sub: `${c.active} active`, value: c.total }))} />
         </div>
       )}
       <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground"><span>{data?.total ?? 0} tickets in history</span><span>{customers.length} customers</span></div>

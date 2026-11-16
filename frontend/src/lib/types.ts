@@ -36,3 +36,16 @@ export interface Stats {
   sla_met_pct?: number;
   by_priority?: Record<string, number>;
 }
+
+export interface Analytics {
+  created_per_day: { date: string; count: number }[];
+  resolved_per_day: { date: string; count: number }[];
+  created_per_week: { start: string; count: number }[];
+  heatmap: number[][];
+  sla_mix: { on_track: number; at_risk: number; overdue: number; resolved: number };
+  age_buckets: { label: string; count: number }[];
+  avg_open_age_hours: number | null;
+  avg_resolution_hours: number | null;
+  top_customers: { name: string; email: string; total: number; active: number }[];
+  customers: { total: number; repeat: number; avg_tickets: number; with_active: number };
+}

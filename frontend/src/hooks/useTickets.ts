@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchTickets, fetchTicket, updateTicket, createTicket, fetchStats } from "@/lib/api";
+import { fetchTickets, fetchTicket, updateTicket, createTicket, fetchStats, fetchAnalytics } from "@/lib/api";
 
 export function useTickets(params?: {
   status?: string;
@@ -42,6 +42,7 @@ export function useUpdateTicket() {
       queryClient.invalidateQueries({ queryKey: ["ticket", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 }
@@ -54,6 +55,15 @@ export function useCreateTicket() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
+  });
+}
+
+export function useAnalytics() {
+  return useQuery({
+    queryKey: ["analytics"],
+    queryFn: fetchAnalytics,
+    refetchInterval: 30000,
   });
 }

@@ -1,9 +1,18 @@
 """Pydantic v2 request/response schemas (§4 of PLAN.md)."""
 
-from datetime import datetime
-from typing import Literal
+from datetime import datetime, timezone
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import AfterValidator, BaseModel, EmailStr, Field, field_validator
+
+
+def _as_utc(v: datetime) -> datetime:
+    """SQLite drops tzinfo, so values read back are naive UTC. Re-attach UTC so the API
+    serializes '...Z' and browsers don't misread the time as their local zone."""
+    return v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v.astimezone(timezone.utc)
+
+
+UTCDateTime = Annotated[datetime, AfterValidator(_as_utc)]
 
 
 # ── Request schemas ───────────────────────────────────────────────────────────
@@ -47,7 +56,7 @@ class NoteOut(BaseModel):
     id: int
     note_text: str
     kind: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     model_config = {"from_attributes": True}
 
@@ -59,9 +68,9 @@ class TicketListItem(BaseModel):
     subject: str
     status: str
     priority: str
-    due_at: datetime
+    due_at: UTCDateTime
     sla_state: str
-    created_at: datetime
+    created_at: UTCDateTime
 
     model_config = {"from_attributes": True}
 
@@ -74,11 +83,11 @@ class TicketDetail(BaseModel):
     description: str
     status: str
     priority: str
-    due_at: datetime
+    due_at: UTCDateTime
     sla_state: str
-    created_at: datetime
-    updated_at: datetime
-    resolved_at: datetime | None = None
+    created_at: UTCDateTime
+    updated_at: UTCDateTime
+    resolved_at: UTCDateTime | None = None
     notes: list[NoteOut] = []
 
     model_config = {"from_attributes": True}
@@ -86,13 +95,13 @@ class TicketDetail(BaseModel):
 
 class TicketCreateResponse(BaseModel):
     ticket_id: str
-    created_at: datetime
-    due_at: datetime
+    created_at: UTCDateTime
+    due_at: UTCDateTime
 
 
 class TicketUpdateResponse(BaseModel):
     success: bool = True
-    updated_at: datetime
+    updated_at: UTCDateTime
 
 
 class StatsOut(BaseModel):
@@ -109,3 +118,17 @@ class StatsOut(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str
     errors: list[dict] | None = None
+
+
+class AnalyticsOut(BaseModel):
+    """Every number the charts show, computed from the whole database (not a page of tickets)."""
+    created_per_day: list[dict]      # [{date: 'YYYY-MM-DD', count}] last 90 days, in the caller's timezone
+    resolved_per_day: list[dict]
+    created_per_week: list[dict]     # last 12 rolling 7-day windows, oldest first
+    heatmap: list[list[int]]         # 7 (Mon..Sun) x 24 creation counts
+    sla_mix: dict[str, int]
+    age_buckets: list[dict]          # age of currently active tickets
+    avg_open_age_hours: float | None
+    avg_resolution_hours: float | None
+    top_customers: list[dict]
+    customers: dict[str, float]
