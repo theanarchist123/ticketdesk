@@ -46,12 +46,6 @@ export default function CustomersPage() {
           <div key={s.l} className="card-surface lift p-4"><p className="eyebrow">{s.l}</p><p className="stat mt-2 text-3xl leading-none" style={{ color: s.c }}>{s.v}</p></div>
         ))}
       </div>
-      {!!an?.top_customers.length && (
-        <div className="card-surface mb-5 p-5">
-          <h2 className="mb-4 text-sm font-semibold">Tickets per customer</h2>
-          <HBars data={an.top_customers.map((c) => ({ label: c.name, sub: `${c.active} active`, value: c.total }))} />
-        </div>
-      )}
       <div className="mb-4 flex items-center justify-between text-xs text-muted-foreground"><span>{data?.total ?? 0} tickets in history</span><span>{customers.length} customers</span></div>
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="hidden grid-cols-[minmax(0,1.5fr)_100px_110px_minmax(0,1fr)] gap-4 border-b border-border bg-muted/50 px-5 py-3 text-[10px] font-semibold text-muted-foreground sm:grid"><span>Customer</span><span>Tickets</span><span>Open</span><span>Latest request</span></div>
@@ -66,6 +60,12 @@ export default function CustomersPage() {
         })}</div>}
       </div>
       {data && data.total > data.data.length && <p className="mt-3 text-center text-xs text-muted-foreground">Showing customers from the latest {data.data.length} tickets.</p>}
+      {!!an?.top_customers.length && (
+        <div className="card-surface mt-6 p-5">
+          <h2 className="mb-4 text-sm font-semibold">Tickets per customer</h2>
+          <HBars data={an.top_customers.map((c) => ({ label: c.name, sub: `${c.active} active`, value: c.total }))} />
+        </div>
+      )}
     </div>
   </Layout>;
 }
